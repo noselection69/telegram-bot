@@ -385,6 +385,8 @@ def get_sales():
         time_filter = request.args.get('time_filter', 'all')  # day, week, all
         deal_filter = request.args.get('deal_filter', 'all')  # best, worst, all
         
+        logger.info(f"📊 Statistics request: user_id={user_id}, time_filter={time_filter}, deal_filter={deal_filter}")
+        
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
         
@@ -408,11 +410,13 @@ def get_sales():
             if time_filter == 'day':
                 from datetime import datetime, timedelta
                 today = get_moscow_now().replace(hour=0, minute=0, second=0, microsecond=0)
-                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= today]
+                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= today.replace(tzinfo=None)]
             elif time_filter == 'week':
                 from datetime import datetime, timedelta
                 week_ago = get_moscow_now() - timedelta(days=7)
-                sales = [s for s in sales if s.sale_date and s.sale_date >= week_ago]
+                # Убираем timezone для корректного сравнения
+                week_ago_naive = week_ago.replace(tzinfo=None)
+                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= week_ago_naive]
             
             # Сортируем по типу сделок
             if deal_filter == 'best':
