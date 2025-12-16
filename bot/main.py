@@ -110,9 +110,17 @@ async def set_bot_commands(bot: Bot):
 
 async def main():
     """Главная функция"""
+    # Логируем информацию о конфигурации
+    from bot.config import DB_PATH, DATA_DIR
+    logger.info(f"🔍 Database configuration:")
+    logger.info(f"   DATA_DIR: {DATA_DIR}")
+    logger.info(f"   DB_PATH: {DB_PATH}")
+    logger.info(f"   DB exists: {DB_PATH.exists()}")
+    logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
+    
     # Инициализируем БД
     await db.init()
-    logger.info("Database initialized")
+    logger.info("✅ Database initialized")
     
     # Создаем бот и диспетчер
     bot = Bot(token=BOT_TOKEN)

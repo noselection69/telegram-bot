@@ -19,7 +19,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Создай директории если их нет
-RUN mkdir -p certs logs
+RUN mkdir -p certs logs data
+
+# Ensure data directory has proper permissions
+RUN chmod 755 data
 
 # Expose порт
 EXPOSE 5000

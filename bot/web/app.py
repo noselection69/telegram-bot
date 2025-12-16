@@ -25,6 +25,10 @@ CORS(app)
 
 # Инициализируем синхронную БД для Flask
 try:
+    logger.info(f"📊 Flask database configuration:")
+    logger.info(f"   DATABASE_URL: {DATABASE_URL}")
+    logger.info(f"   SYNC_DATABASE_URL: {DATABASE_URL.replace('sqlite+aiosqlite', 'sqlite')}")
+    
     SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
@@ -34,7 +38,9 @@ try:
     Base.metadata.create_all(bind=sync_engine)
     logger.info("✅ Database tables created/verified")
 except Exception as e:
-    logger.error(f"Database error: {e}")
+    logger.error(f"❌ Database error: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
     SessionLocal = None
 
 
