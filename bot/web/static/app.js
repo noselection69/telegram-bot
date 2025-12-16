@@ -57,8 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Получаем ID пользователя
     userId = tg.initDataUnsafe?.user?.id || 0;
     
+    console.log('🔍 Telegram Web App initialized');
+    console.log('User ID:', userId);
+    console.log('User:', tg.initDataUnsafe?.user);
+    
     if (userId) {
         document.getElementById('userName').textContent = `👤 ${tg.initDataUnsafe.user.first_name}`;
+    } else {
+        console.warn('⚠️ User ID is 0 - not in Telegram Web App!');
     }
     
     // Установка цвета темы
@@ -149,13 +155,17 @@ async function submitAddItem(event) {
 
 async function loadItems() {
     try {
+        console.log('📦 Loading items for user:', userId);
+        
         const response = await fetch('/api/get-items', {
             headers: {
                 'X-User-ID': userId
             }
         });
         
+        console.log('📦 Response status:', response.status);
         const data = await response.json();
+        console.log('📦 Response data:', data);
         
         if (data.success && data.items.length > 0) {
             document.getElementById('itemsList').innerHTML = data.items.map(item => `
