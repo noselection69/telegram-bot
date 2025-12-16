@@ -162,9 +162,32 @@ function switchTab(tabName) {
     event.target.classList.add('active');
 }
 
+// Функция для закрытия всех popup view'ов
+function closeAllPopups() {
+    const popups = [
+        'addItemForm',
+        'addCarForm',
+        'statisticsView',
+        'historyView',
+        'buyPricesView',
+        'rentalModal',
+        'carsView',
+        'rentalStatsView',
+        'activeRentalsView'
+    ];
+    
+    popups.forEach(popupId => {
+        const element = document.getElementById(popupId);
+        if (element) {
+            element.classList.add('hidden');
+        }
+    });
+}
+
 // === ТОВАРЫ ===
 
 function showAddItemForm() {
+    closeAllPopups();
     document.getElementById('addItemForm').classList.remove('hidden');
     document.getElementById('addItemForm').scrollIntoView({ behavior: 'smooth' });
 }
@@ -293,6 +316,7 @@ async function submitSellItem(itemId, salePrice) {
 // === АВТОМОБИЛИ ===
 
 function showAddCarForm() {
+    closeAllPopups();
     document.getElementById('addCarForm').classList.remove('hidden');
     document.getElementById('addCarForm').scrollIntoView({ behavior: 'smooth' });
 }
@@ -552,15 +576,11 @@ async function loadInventory() {
 }
 
 function showStatistics() {
+    closeAllPopups();
     const stats = document.getElementById('statisticsView');
-    if (stats.classList.contains('hidden')) {
-        document.getElementById('addItemForm').classList.add('hidden');
-        stats.classList.remove('hidden');
-        loadStatistics();
-        stats.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideStatistics();
-    }
+    stats.classList.remove('hidden');
+    loadStatistics();
+    stats.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideStatistics() {
@@ -568,15 +588,11 @@ function hideStatistics() {
 }
 
 function showHistory() {
+    closeAllPopups();
     const hist = document.getElementById('historyView');
-    if (hist.classList.contains('hidden')) {
-        document.getElementById('addItemForm').classList.add('hidden');
-        hist.classList.remove('hidden');
-        loadHistory();
-        hist.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideHistory();
-    }
+    hist.classList.remove('hidden');
+    loadHistory();
+    hist.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideHistory() {
@@ -635,26 +651,22 @@ function enableBuyPriceInputs() {
 }
 
 function showBuyPrices() {
+    closeAllPopups();
     const buyPrices = document.getElementById('buyPricesView');
-    if (buyPrices.classList.contains('hidden')) {
-        document.getElementById('addItemForm').classList.add('hidden');
-        buyPrices.classList.remove('hidden');
-        
-        // Убеждаемся что input'ы активны
-        setTimeout(() => {
-            enableBuyPriceInputs();
-            const nameInput = document.getElementById('itemNameInput');
-            if (nameInput) {
-                nameInput.value = '';
-                nameInput.focus();
-            }
-        }, 50);
-        
-        loadBuyPrices();
-        buyPrices.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideBuyPrices();
-    }
+    buyPrices.classList.remove('hidden');
+    
+    // Убеждаемся что input'ы активны
+    setTimeout(() => {
+        enableBuyPriceInputs();
+        const nameInput = document.getElementById('itemNameInput');
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.focus();
+        }
+    }, 50);
+    
+    loadBuyPrices();
+    buyPrices.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideBuyPrices() {
@@ -906,15 +918,11 @@ function loadHistory() {
 // === АРЕНДА ===
 
 function showCars() {
+    closeAllPopups();
     const cars = document.getElementById('carsView');
-    if (cars.classList.contains('hidden')) {
-        document.getElementById('addCarForm').classList.add('hidden');
-        cars.classList.remove('hidden');
-        loadCarsForView();
-        cars.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideCars();
-    }
+    cars.classList.remove('hidden');
+    loadCarsForView();
+    cars.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideCars() {
@@ -922,15 +930,11 @@ function hideCars() {
 }
 
 function showRentalStats() {
+    closeAllPopups();
     const stats = document.getElementById('rentalStatsView');
-    if (stats.classList.contains('hidden')) {
-        document.getElementById('addCarForm').classList.add('hidden');
-        stats.classList.remove('hidden');
-        loadRentalStats();
-        stats.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideRentalStats();
-    }
+    stats.classList.remove('hidden');
+    loadRentalStats();
+    stats.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideRentalStats() {
@@ -938,15 +942,11 @@ function hideRentalStats() {
 }
 
 function showActiveRentals() {
+    closeAllPopups();
     const active = document.getElementById('activeRentalsView');
-    if (active.classList.contains('hidden')) {
-        document.getElementById('addCarForm').classList.add('hidden');
-        active.classList.remove('hidden');
-        loadActiveRentals();
-        active.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        hideActiveRentals();
-    }
+    active.classList.remove('hidden');
+    loadActiveRentals();
+    active.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideActiveRentals() {
