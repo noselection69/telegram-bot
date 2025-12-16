@@ -109,17 +109,17 @@
                 <div id="buyPricesView" class="view hidden">
                     <h3>💰 Цены скупа</h3>
                     
-                    <div class="form" style="background: var(--bg-secondary);">
+                    <div class="form">
                         <h4 style="margin-bottom: 10px;">Добавить цену</h4>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="itemNameInput" placeholder="Название товара" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
-                            <input type="number" id="itemPriceInput" placeholder="Цена" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                            <input type="text" id="itemNameInput" placeholder="Название товара" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
+                            <input type="number" id="itemPriceInput" placeholder="Цена" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
                             <button class="btn btn-success" onclick="submitBuyPrice()" style="padding: 8px 16px;">➕</button>
                         </div>
                     </div>
                     
                     <div style="margin-bottom: 12px;">
-                        <input type="text" id="buyPriceSearch" placeholder="Поиск..." onkeyup="searchBuyPrices()" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                        <input type="text" id="buyPriceSearch" placeholder="Поиск..." onkeyup="searchBuyPrices()" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
                     </div>
                     
                     <div id="buyPricesList" class="items-list">
