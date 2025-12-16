@@ -155,6 +155,19 @@ async def main():
         else:
             logger.info("⏭️  Skipping web server (running as worker only)")
     
+    # Проверяем, нужно ли запускать polling бота
+    run_bot = os.getenv("RUN_BOT", "true").lower() != "false"
+    
+    if not run_bot:
+        logger.info("🛑 Bot polling disabled (RUN_BOT=false)")
+        # Просто ждём бесконечно, чтобы процесс не завершился
+        try:
+            while True:
+                await asyncio.sleep(60)
+        except KeyboardInterrupt:
+            logger.info("Process interrupted")
+        return
+    
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
     
