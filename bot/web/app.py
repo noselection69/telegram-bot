@@ -53,6 +53,15 @@ def handle_error(e):
     print(f"❌ ERROR: {type(e).__name__}: {str(e)}", file=sys.stderr)
     sys.stderr.flush()
     return jsonify({'error': str(e), 'type': type(e).__name__}), 500
+
+
+@app.errorhandler(404)
+def handle_404(e):
+    """Обработчик 404 ошибок"""
+    logger.error(f"❌ 404 Not Found: {request.method} {request.path}")
+    logger.error(f"   Available routes: {[str(rule) for rule in app.url_map.iter_rules() if 'api' in str(rule)]}")
+    return jsonify({'error': 'Not Found', 'path': request.path}), 404
+
 # Флаг для отслеживания, запущен ли бот
 _bot_started = False
 
