@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import subprocess
+import os
 from pathlib import Path
 import ssl
 from datetime import datetime, timedelta
@@ -128,19 +129,26 @@ async def main():
     await set_bot_commands(bot)
     logger.info("Bot commands set")
     
-    # Генерируем SSL сертификаты
-    cert_file, key_file = ensure_ssl_certs()
+    # НЕ запускаем Flask на worker процессе (он запущен в web сервисе)
+    # Проверяем если это worker процесс
+    is_worker_only = os.getenv("RAILWAY_SERVICE") == "worker" or os.getenv("WORKER_ONLY") == "true"
     
-    # Запускаем веб-сервер в отдельном потоке с HTTPS
-    if cert_file and key_file:
-        web_thread = threading.Thread(target=run_web_server, args=(5000, cert_file, key_file), daemon=True)
-        logger.info("🟢 Web server will use HTTPS")
+    if not is_worker_only:
+        # Генерируем SSL сертификаты
+        cert_file, key_file = ensure_ssl_certs()
+        
+        # Запускаем веб-сервер в отдельном потоке с HTTPS
+        if cert_file and key_file:
+            web_thread = threading.Thread(target=run_web_server, args=(5000, cert_file, key_file), daemon=True)
+            logger.info("🟢 Web server will use HTTPS")
+        else:
+            web_thread = threading.Thread(target=run_web_server, args=(5000, None, None), daemon=True)
+            logger.info("🟡 Web server will use HTTP (Web App buttons disabled)")
+        
+        web_thread.start()
+        logger.info("✅ Web server started on port 5000")
     else:
-        web_thread = threading.Thread(target=run_web_server, args=(5000, None, None), daemon=True)
-        logger.info("🟡 Web server will use HTTP (Web App buttons disabled)")
-    
-    web_thread.start()
-    logger.info("✅ Web server started on port 5000")
+        logger.info("⏭️  Skipping web server (running as worker only)")
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
