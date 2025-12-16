@@ -5,3 +5,7 @@ builder = "dockerfile"
 numReplicas = 1
 startCommand = "python -m bot.main"
 restartPolicyMaxRetries = 5
+
+[[volumes]]
+sourcePathSuffix = "data"
+mountPath = "/app/data"
