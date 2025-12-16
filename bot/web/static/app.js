@@ -550,6 +550,21 @@ function showBuyPrices() {
     if (buyPrices.classList.contains('hidden')) {
         document.getElementById('addItemForm').classList.add('hidden');
         buyPrices.classList.remove('hidden');
+        
+        // Убеждаемся что input'ы активны
+        setTimeout(() => {
+            const nameInput = document.getElementById('itemNameInput');
+            const priceInput = document.getElementById('itemPriceInput');
+            if (nameInput) {
+                nameInput.disabled = false;
+                nameInput.value = '';
+            }
+            if (priceInput) {
+                priceInput.disabled = false;
+                priceInput.value = '';
+            }
+        }, 50);
+        
         loadBuyPrices();
         buyPrices.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -634,10 +649,20 @@ async function submitBuyPrice() {
             // Очищаем поля
             nameInput.value = '';
             priceInput.value = '';
-            // Даём фокус первому полю
-            nameInput.focus();
             // Перезагружаем список
             await loadBuyPrices();
+            // Восстанавливаем состояние input'ов после загрузки
+            setTimeout(() => {
+                const freshNameInput = document.getElementById('itemNameInput');
+                const freshPriceInput = document.getElementById('itemPriceInput');
+                if (freshNameInput && freshPriceInput) {
+                    freshNameInput.value = '';
+                    freshPriceInput.value = '';
+                    freshNameInput.disabled = false;
+                    freshPriceInput.disabled = false;
+                    freshNameInput.focus();
+                }
+            }, 100);
         } else {
             showNotification(data.error || 'Ошибка добавления', 'error');
         }
