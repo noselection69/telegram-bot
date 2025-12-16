@@ -580,7 +580,8 @@ async function loadBuyPrices() {
                         <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить">✕</button>
                     </div>
                     <p class="item-price">💰 ${formatPrice(price.price)}$</p>
-                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;">📅 ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;">� ${price.seller_name}</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 2px;">�📅 ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
                 </div>
             `).join('');
         } else {

@@ -585,21 +585,12 @@ def delete_item(item_id):
 
 @app.route('/api/get-buy-prices', methods=['GET'])
 def get_buy_prices():
-    """Получить цены скупа пользователя"""
+    """Получить ВСЕ цены скупа (общий список для всех пользователей)"""
     try:
-        user_id = int(request.headers.get('X-User-ID', 0))
-        
-        if not user_id:
-            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
-        
         session = SessionLocal()
         try:
-            user = session.query(User).filter(User.telegram_id == user_id).first()
-            
-            if not user:
-                return jsonify({'success': True, 'prices': []})
-            
-            prices = session.query(BuyPrice).filter(BuyPrice.user_id == user.id).order_by(BuyPrice.created_at.desc()).all()
+            # Получаем все цены, отсортированные по дате (новые первыми)
+            prices = session.query(BuyPrice).order_by(BuyPrice.created_at.desc()).all()
             
             return jsonify({
                 'success': True,
@@ -608,6 +599,7 @@ def get_buy_prices():
                         'id': price.id,
                         'item_name': price.item_name,
                         'price': price.price,
+                        'seller_name': price.seller_name or '📌 Неизвестно',
                         'created_at': price.created_at.isoformat()
                     }
                     for price in prices
@@ -638,8 +630,12 @@ def add_buy_price():
                 session.add(user)
                 session.flush()
             
+            # Получаем имя пользователя для отображения в списке
+            seller_name = user.username or f"Пользователь {user_id}"
+            
             price = BuyPrice(
                 user_id=user.id,
+                seller_name=seller_name,
                 item_name=data['item_name'],
                 price=float(data['price'])
             )

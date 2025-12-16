@@ -91,6 +91,7 @@ class BuyPrice(Base):
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    seller_name = Column(String(255), nullable=True)  # Имя того, кто добавил цену
     item_name = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
