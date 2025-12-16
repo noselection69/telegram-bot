@@ -20,13 +20,7 @@ function toggleTheme() {
         localStorage.setItem('theme', 'light');
         themeToggle.textContent = '🌙';
     } else {
-        body.c            carsList2.innerHTML = data.cars.map(car => `
-                <div class="item-card">
-                    <h4>${car.name}</h4>
-                    <p class="item-price">💰 ${formatPrice(car.cost)}$</p>
-                    <button class="btn btn-small btn-danger" onclick="deleteCar(${car.id})">🗑️ Удалить</button>
-                </div>
-            `).join('');t.remove('light-theme');
+        body.classList.remove('light-theme');
         localStorage.setItem('theme', 'dark');
         themeToggle.textContent = '☀️';
     }
