@@ -46,16 +46,25 @@ app = Flask(__name__, template_folder=str(TEMPLATE_DIR), static_folder=str(STATI
 CORS(app)
 
 logger.info(f"✅ Flask app initialized with template_folder={app.template_folder}, static_folder={app.static_folder}")
+print(f"✅ Flask app object created: {app}", file=sys.stderr)
+sys.stderr.flush()
 
 # Инициализируем синхронную БД для Flask
 try:
     SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
     logger.info(f"Database URL: {SYNC_DATABASE_URL}")
+    print(f"Creating sync engine for: {SYNC_DATABASE_URL}", file=sys.stderr)
+    sys.stderr.flush()
+    
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     logger.info("✅ Database engine initialized")
+    print("✅ Database engine created", file=sys.stderr)
+    sys.stderr.flush()
 except Exception as e:
     logger.error(f"❌ Database initialization error: {e}", exc_info=True)
+    print(f"❌ Database error: {e}", file=sys.stderr)
+    sys.stderr.flush()
     SessionLocal = None
 
 
@@ -70,15 +79,22 @@ def log_request():
 def handle_error(e):
     """Обработчик всех ошибок"""
     logger.error(f"❌ ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
+    print(f"❌ ERROR: {type(e).__name__}: {str(e)}", file=sys.stderr)
+    sys.stderr.flush()
     return jsonify({'error': str(e), 'type': type(e).__name__}), 500
 
 
-@app.route('/')
-def index():
-    """Главная страница"""
-    logger.info("✅ Rendering index.html")
-    return render_template('index.html')
-
+try:
+    @app.route('/')
+    def index():
+        """Главная страница"""
+        logger.info("✅ Rendering index.html")
+        return render_template('index.html')
+    print("✅ Route / registered", file=sys.stderr)
+    sys.stderr.flush()
+except Exception as e:
+    print(f"❌ Error registering route /: {e}", file=sys.stderr)
+    sys.stderr.flush()
 
 @app.route('/health')
 def health():
