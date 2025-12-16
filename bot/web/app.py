@@ -2,18 +2,8 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import logging
 import os
-from pathlib import Path
-
-# САМОЕ ПЕРВОЕ ЛОГИРОВАНИЕ
 import sys
-print("🟢 bot.web.app: Starting import...", file=sys.stderr)
-sys.stderr.flush()
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.info("🟢 bot.web.app: Logging configured")
-
-# Теперь остальные импорты
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from bot.models.database import User, Item, Car, Sale, Rental, CategoryEnum
@@ -22,50 +12,26 @@ from bot.config import DATABASE_URL
 from datetime import datetime, timedelta
 import pytz
 
-logger.info("🟢 bot.web.app: All imports successful")
-
-# Проверяем, запущены ли мы через gunicorn (WSGI)
-IS_GUNICORN = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
-logger.info(f"🔧 IS_GUNICORN: {IS_GUNICORN}")
-logger.info(f"🔧 SERVER_SOFTWARE: {os.environ.get('SERVER_SOFTWARE', 'not set')}")
-logger.info(f"🔧 PORT env var: {os.environ.get('PORT', 'not set')}")
-logger.info(f"🔧 RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'not set')}")
-logger.info(f"🔧 RAILWAY_STATIC_URL: {os.environ.get('RAILWAY_STATIC_URL', 'not set')}")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Получаем абсолютные пути
 BASE_DIR = Path(__file__).parent
 TEMPLATE_DIR = BASE_DIR / 'templates'
 STATIC_DIR = BASE_DIR / 'static'
 
-# Логируем пути для отладки
-logger.info(f"BASE_DIR: {BASE_DIR}")
-logger.info(f"TEMPLATE_DIR: {TEMPLATE_DIR} (exists: {TEMPLATE_DIR.exists()})")
-logger.info(f"STATIC_DIR: {STATIC_DIR} (exists: {STATIC_DIR.exists()})")
-
 app = Flask(__name__, template_folder=str(TEMPLATE_DIR), static_folder=str(STATIC_DIR))
 CORS(app)
-
-logger.info(f"✅ Flask app initialized with template_folder={app.template_folder}, static_folder={app.static_folder}")
-print(f"✅ Flask app object created: {app}", file=sys.stderr)
-sys.stderr.flush()
 
 # Инициализируем синхронную БД для Flask
 try:
     SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
-    logger.info(f"Database URL: {SYNC_DATABASE_URL}")
-    print(f"Creating sync engine for: {SYNC_DATABASE_URL}", file=sys.stderr)
-    sys.stderr.flush()
-    
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
-    logger.info("✅ Database engine initialized")
-    print("✅ Database engine created", file=sys.stderr)
-    sys.stderr.flush()
 except Exception as e:
-    logger.error(f"❌ Database initialization error: {e}", exc_info=True)
-    print(f"❌ Database error: {e}", file=sys.stderr)
-    sys.stderr.flush()
+    logger.error(f"Database error: {e}")
     SessionLocal = None
+
 
 
 @app.before_request
@@ -84,49 +50,15 @@ def handle_error(e):
     return jsonify({'error': str(e), 'type': type(e).__name__}), 500
 # Флаг для отслеживания, запущен ли бот
 _bot_started = False
-_bot_lock = None
-
-
-def start_bot_if_needed():
-    """Запустить бота один раз при первом запросе"""
-    global _bot_started, _bot_lock
-    
-    import threading
-    if _bot_lock is None:
-        _bot_lock = threading.Lock()
-    
-    if not _bot_started:
-        with _bot_lock:
-            if not _bot_started:
-                logger.info("🤖 Starting bot polling in background thread...")
-                try:
-                    import asyncio
-                    from bot.main import main as bot_main
-                    
-                    def run_bot():
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        try:
-                            loop.run_until_complete(bot_main())
-                        except Exception as e:
-                            logger.error(f"❌ Bot error: {e}", exc_info=True)
-                        finally:
-                            loop.close()
-                    
-                    bot_thread = threading.Thread(target=run_bot, daemon=True)
-                    bot_thread.start()
-                    _bot_started = True
-                    logger.info("✅ Bot thread started")
-                except Exception as e:
-                    logger.error(f"❌ Failed to start bot: {e}", exc_info=True)
 
 
 try:
     @app.route('/')
     def index():
         """Главная страница"""
-        start_bot_if_needed()  # Запустим бота при первом обращении
         logger.info("✅ Rendering index.html")
+        print("GET / called", file=sys.stderr)
+        sys.stderr.flush()
         return render_template('index.html')
     print("✅ Route / registered", file=sys.stderr)
     sys.stderr.flush()

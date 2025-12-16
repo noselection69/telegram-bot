@@ -1,2 +1,0 @@
-web: cd /app && gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 60 --access-logfile - --error-logfile - --chdir /app bot.web.app:app
-worker: cd /app && export RAILWAY_SERVICE=worker && python -m bot.main
