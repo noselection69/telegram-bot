@@ -100,6 +100,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Инициализация обработчиков для полей цены скупа
+    const nameInput = document.getElementById('itemNameInput');
+    const priceInput = document.getElementById('itemPriceInput');
+    
+    if (nameInput) {
+        nameInput.addEventListener('focus', () => enableBuyPriceInputs());
+        nameInput.addEventListener('click', () => enableBuyPriceInputs());
+    }
+    
+    if (priceInput) {
+        priceInput.addEventListener('focus', () => enableBuyPriceInputs());
+        priceInput.addEventListener('click', () => enableBuyPriceInputs());
+    }
+    
     // Загрузка данных
     loadItems();
     loadCars();
@@ -545,6 +559,24 @@ function hideHistory() {
 
 // === ЦЕНЫ СКУПА ===
 
+function enableBuyPriceInputs() {
+    const nameInput = document.getElementById('itemNameInput');
+    const priceInput = document.getElementById('itemPriceInput');
+    
+    if (nameInput) {
+        nameInput.disabled = false;
+        nameInput.style.pointerEvents = 'auto';
+        nameInput.style.opacity = '1';
+        nameInput.style.cursor = 'text';
+    }
+    if (priceInput) {
+        priceInput.disabled = false;
+        priceInput.style.pointerEvents = 'auto';
+        priceInput.style.opacity = '1';
+        priceInput.style.cursor = 'text';
+    }
+}
+
 function showBuyPrices() {
     const buyPrices = document.getElementById('buyPricesView');
     if (buyPrices.classList.contains('hidden')) {
@@ -553,15 +585,11 @@ function showBuyPrices() {
         
         // Убеждаемся что input'ы активны
         setTimeout(() => {
+            enableBuyPriceInputs();
             const nameInput = document.getElementById('itemNameInput');
-            const priceInput = document.getElementById('itemPriceInput');
             if (nameInput) {
-                nameInput.disabled = false;
                 nameInput.value = '';
-            }
-            if (priceInput) {
-                priceInput.disabled = false;
-                priceInput.value = '';
+                nameInput.focus();
             }
         }, 50);
         
@@ -653,13 +681,10 @@ async function submitBuyPrice() {
             await loadBuyPrices();
             // Восстанавливаем состояние input'ов после загрузки
             setTimeout(() => {
+                enableBuyPriceInputs();
                 const freshNameInput = document.getElementById('itemNameInput');
-                const freshPriceInput = document.getElementById('itemPriceInput');
-                if (freshNameInput && freshPriceInput) {
+                if (freshNameInput) {
                     freshNameInput.value = '';
-                    freshPriceInput.value = '';
-                    freshNameInput.disabled = false;
-                    freshPriceInput.disabled = false;
                     freshNameInput.focus();
                 }
             }, 100);
