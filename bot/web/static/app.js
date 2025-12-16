@@ -594,10 +594,18 @@ async function loadBuyPrices() {
 
 async function submitBuyPrice() {
     const name = document.getElementById('itemNameInput').value.trim();
-    const price = document.getElementById('itemPriceInput').value;
+    const priceInput = document.getElementById('itemPriceInput').value.trim();
     
-    if (!name || !price) {
+    if (!name || !priceInput) {
         showNotification('Заполните оба поля', 'warning');
+        return;
+    }
+    
+    // Парсим цену - извлекаем только числа и точки
+    const price = parseFloat(priceInput.replace(/[^\d.]/g, ''));
+    
+    if (isNaN(price) || price <= 0) {
+        showNotification('Цена должна быть числом > 0', 'warning');
         return;
     }
     
@@ -610,7 +618,7 @@ async function submitBuyPrice() {
             },
             body: JSON.stringify({
                 item_name: name,
-                price: parseFloat(price)
+                price: price
             })
         });
         
@@ -618,9 +626,13 @@ async function submitBuyPrice() {
         
         if (data.success) {
             showNotification('✅ Цена добавлена', 'success');
+            // Очищаем поля после успешного добавления
             document.getElementById('itemNameInput').value = '';
             document.getElementById('itemPriceInput').value = '';
-            loadBuyPrices();
+            // Даём фокус первому полю для удобства
+            document.getElementById('itemNameInput').focus();
+            // Перезагружаем список
+            await loadBuyPrices();
         } else {
             showNotification(data.error || 'Ошибка добавления', 'error');
         }
