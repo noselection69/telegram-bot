@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from bot.config import DATABASE_URL
+from bot.config import DATABASE_URL, DB_PATH
 from bot.models.database import Base
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -11,13 +14,22 @@ class Database:
     
     async def init(self):
         """Инициализация БД"""
-        self.engine = create_async_engine(DATABASE_URL, echo=False)
-        self.async_session = sessionmaker(
-            self.engine, class_=AsyncSession, expire_on_commit=False
-        )
+        logger.info(f"🔧 Initializing database at: {DB_PATH}")
+        logger.info(f"📍 Database URL: {DATABASE_URL}")
         
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        try:
+            self.engine = create_async_engine(DATABASE_URL, echo=False)
+            self.async_session = sessionmaker(
+                self.engine, class_=AsyncSession, expire_on_commit=False
+            )
+            
+            async with self.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            
+            logger.info("✅ Database initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Database initialization failed: {e}")
+            raise
     
     async def close(self):
         """Закрытие БД"""

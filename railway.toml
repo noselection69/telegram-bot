@@ -6,6 +6,6 @@ numReplicas = 1
 startCommand = "python -m bot.main"
 restartPolicyMaxRetries = 5
 
+# Постоянное хранилище для БД
 [[volumes]]
-sourcePathSuffix = "data"
 mountPath = "/app/data"

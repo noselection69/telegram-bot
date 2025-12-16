@@ -32,9 +32,10 @@ try:
     # Создаём все таблицы (включая новую BuyPrice таблицу)
     from bot.models.database import Base
     Base.metadata.create_all(bind=sync_engine)
+    logger.info(f"✅ Flask Database initialized at: {SYNC_DATABASE_URL}")
     logger.info("✅ Database tables created/verified")
 except Exception as e:
-    logger.error(f"Database error: {e}")
+    logger.error(f"❌ Database error: {e}")
     SessionLocal = None
 
 

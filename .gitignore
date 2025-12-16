@@ -10,6 +10,8 @@ ENV/
 *.sqlite3
 bot_data.db
 bot_data_backup.db
+data/
+/app/data/
 
 # Python
 __pycache__/
