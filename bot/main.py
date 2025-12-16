@@ -14,7 +14,7 @@ from bot.config import BOT_TOKEN
 from bot.models.init_db import db
 from bot.handlers import navigation, resell, statistics, rental
 from bot.tasks.notifications import check_rental_notifications
-from bot.web.app import run_web_server
+# from bot.web.app import run_web_server  # УДАЛЕНО - вызывает циклический импорт на Railway
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -128,45 +128,6 @@ async def main():
     # Устанавливаем команды
     await set_bot_commands(bot)
     logger.info("Bot commands set")
-    
-    # НЕ запускаем Flask если это Railway (web сервис использует gunicorn)
-    # или если это worker процесс
-    is_railway = os.getenv("RAILWAY_ENVIRONMENT") is not None
-    is_worker_only = os.getenv("RAILWAY_SERVICE") == "worker" or os.getenv("WORKER_ONLY") == "true"
-    
-    # Запускаем веб-сервер ТОЛЬКО для локальной разработки
-    if not is_railway and not is_worker_only:
-        # Генерируем SSL сертификаты
-        cert_file, key_file = ensure_ssl_certs()
-        
-        # Запускаем веб-сервер в отдельном потоке с HTTPS
-        if cert_file and key_file:
-            web_thread = threading.Thread(target=run_web_server, args=(5000, cert_file, key_file), daemon=True)
-            logger.info("🟢 Web server will use HTTPS")
-        else:
-            web_thread = threading.Thread(target=run_web_server, args=(5000, None, None), daemon=True)
-            logger.info("🟡 Web server will use HTTP (Web App buttons disabled)")
-        
-        web_thread.start()
-        logger.info("✅ Web server started on port 5000")
-    else:
-        if is_railway:
-            logger.info("⏭️  Skipping web server (Flask managed by gunicorn on Railway)")
-        else:
-            logger.info("⏭️  Skipping web server (running as worker only)")
-    
-    # Проверяем, нужно ли запускать polling бота
-    run_bot = os.getenv("RUN_BOT", "true").lower() != "false"
-    
-    if not run_bot:
-        logger.info("🛑 Bot polling disabled (RUN_BOT=false)")
-        # Просто ждём бесконечно, чтобы процесс не завершился
-        try:
-            while True:
-                await asyncio.sleep(60)
-        except KeyboardInterrupt:
-            logger.info("Process interrupted")
-        return
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
