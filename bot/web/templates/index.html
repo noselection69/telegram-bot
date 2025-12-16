@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💼 Финансовый Менеджер</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h1 style="margin: 0;">💼 Финансовый Менеджер</h1>
+                <button id="themeToggle" class="btn" style="flex: 0 0 auto; padding: 8px 12px; background: rgba(255,255,255,0.2); border: none; color: white; cursor: pointer; border-radius: 6px; font-size: 18px;">☀️</button>
+            </div>
+            <div class="user-info" id="userInfo">
+                <span id="userName">Загрузка...</span>
+            </div>
+        </header>
+
+        <!-- Навигация -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="resell">📊 Перекупа</button>
+            <button class="tab-btn" data-tab="rental">🚗 Аренда</button>
+        </nav>
+
+        <!-- Калькулятор перекупа -->
+        <section id="resell-tab" class="tab-content active">
+            <div class="section">
+                <h2>📊 Калькулятор перекупа</h2>
+                
+                <div class="form-group">
+                    <button class="btn btn-primary" onclick="showAddItemForm()">➕ Добавить товар</button>
+                    <button class="btn btn-info" onclick="showInventory()">📋 Инвентарь</button>
+                    <button class="btn btn-info" onclick="showStatistics()">📈 Статистика</button>
+                    <button class="btn btn-info" onclick="showHistory()">📜 История продаж</button>
+                </div>
+
+                <!-- Форма добавления товара -->
+                <div id="addItemForm" class="form hidden">
+                    <h3>Добавить новый товар</h3>
+                    <form onsubmit="submitAddItem(event)">
+                        <div class="form-field">
+                            <label>Название товара:</label>
+                            <input type="text" id="itemName" placeholder="Например: iPhone 13" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Категория:</label>
+                            <select id="itemCategory" required>
+                                <option value="ACCESSORY">Аксессуар</option>
+                                <option value="THING">Вещь</option>
+                                <option value="APARTMENT">Квартира</option>
+                                <option value="HOUSE">Дом</option>
+                                <option value="CAR">Автомобиль</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Цена покупки (₽):</label>
+                            <input type="number" id="itemPrice" placeholder="50000" step="0.01" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Комментарий:</label>
+                            <textarea id="itemComment" placeholder="Дополнительная информация"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">✅ Добавить</button>
+                            <button type="button" class="btn btn-secondary" onclick="hideAddItemForm()">❌ Отмена</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Список товаров -->
+                <div id="itemsList" class="items-list">
+                    <p class="loading">Загрузка товаров...</p>
+                </div>
+                
+                <!-- Инвентарь -->
+                <div id="inventoryView" class="view hidden">
+                    <h3>📋 Ваш инвентарь</h3>
+                    <div id="inventoryList" class="items-list">
+                        <p class="loading">Загрузка...</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="hideInventory()">← Назад</button>
+                </div>
+                
+                <!-- Статистика -->
+                <div id="statisticsView" class="view hidden">
+                    <h3>📈 Статистика</h3>
+                    <div id="statisticsContent"></div>
+                    <button class="btn btn-secondary" onclick="hideStatistics()">← Назад</button>
+                </div>
+                
+                <!-- История -->
+                <div id="historyView" class="view hidden">
+                    <h3>📜 История продаж</h3>
+                    <div id="historyList" class="items-list">
+                        <p class="loading">Загрузка...</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="hideHistory()">← Назад</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Управление арендой -->
+        <section id="rental-tab" class="tab-content">
+            <div class="section">
+                <h2>🚗 Управление арендой</h2>
+                
+                <div class="form-group">
+                    <button class="btn btn-primary" onclick="showAddCarForm()">➕ Добавить авто</button>
+                    <button class="btn btn-info" onclick="showCars()">🚗 Мои авто</button>
+                    <button class="btn btn-info" onclick="showRentalStats()">📊 Статистика</button>
+                    <button class="btn btn-info" onclick="showActiveRentals()">🔔 Активные аренды</button>
+                </div>
+
+                <!-- Форма добавления авто -->
+                <div id="addCarForm" class="form hidden">
+                    <h3>Добавить новый автомобиль</h3>
+                    <form onsubmit="submitAddCar(event)">
+                        <div class="form-field">
+                            <label>Название/марка:</label>
+                            <input type="text" id="carName" placeholder="Например: BMW X5" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Стоимость авто (₽):</label>
+                            <input type="number" id="carCost" placeholder="500000" step="0.01" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">✅ Добавить</button>
+                            <button type="button" class="btn btn-secondary" onclick="hideAddCarForm()">❌ Отмена</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Список авто -->
+                <div id="carsList" class="cars-list">
+                    <p class="loading">Загрузка автомобилей...</p>
+                </div>
+                
+                <!-- Мои авто -->
+                <div id="carsView" class="view hidden">
+                    <h3>🚗 Мои автомобили</h3>
+                    <div id="carsList2" class="cars-list">
+                        <p class="loading">Загрузка...</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="hideCars()">← Назад</button>
+                </div>
+                
+                <!-- Статистика аренды -->
+                <div id="rentalStatsView" class="view hidden">
+                    <h3>📊 Статистика аренды</h3>
+                    <div id="rentalStatsContent"></div>
+                    <button class="btn btn-secondary" onclick="hideRentalStats()">← Назад</button>
+                </div>
+                
+                <!-- Активные аренды -->
+                <div id="activeRentalsView" class="view hidden">
+                    <h3>🔔 Активные аренды</h3>
+                    <div id="activeRentalsList" class="items-list">
+                        <p class="loading">Загрузка...</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="hideActiveRentals()">← Назад</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Модальное окно сдачи авто в аренду -->
+    <div id="rentalModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>💰 Сдать авто в аренду</h3>
+            <form onsubmit="submitRental(event)">
+                <input type="hidden" id="rentalCarId">
+                
+                <div class="form-field">
+                    <label>Цена за час (₽):</label>
+                    <input type="number" id="rentalPrice" placeholder="500" step="0.01" required>
+                </div>
+
+                <div class="form-field">
+                    <label>Количество часов:</label>
+                    <input type="number" id="rentalHours" placeholder="4" min="1" required>
+                </div>
+
+                <div class="form-field">
+                    <label>Время окончания (HH:MM или +N часов):</label>
+                    <input type="text" id="rentalEndTime" placeholder="22:30 или +4" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">✅ Записать</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeRentalModal()">❌ Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div id="notification" class="notification hidden"></div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

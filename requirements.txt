@@ -1,0 +1,11 @@
+aiogram==3.4.1
+sqlalchemy==2.0.23
+python-dotenv==1.0.0
+aiosqlite==0.22.0
+pytz==2024.1
+flask==3.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
+cryptography==46.0.3
+psycopg2-binary==2.9.9
+python-decouple==3.8
