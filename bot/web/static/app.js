@@ -107,12 +107,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nameInput) {
         nameInput.addEventListener('focus', () => enableBuyPriceInputs());
         nameInput.addEventListener('click', () => enableBuyPriceInputs());
+        nameInput.addEventListener('input', () => enableBuyPriceInputs());
     }
     
     if (priceInput) {
         priceInput.addEventListener('focus', () => enableBuyPriceInputs());
         priceInput.addEventListener('click', () => enableBuyPriceInputs());
+        priceInput.addEventListener('input', () => enableBuyPriceInputs());
     }
+    
+    // Постоянный мониторинг состояния input'ов (каждые 500ms проверяем их активность)
+    setInterval(() => {
+        const nameInput = document.getElementById('itemNameInput');
+        const priceInput = document.getElementById('itemPriceInput');
+        
+        if (nameInput && priceInput) {
+            // Проверяем не заблокированы ли они
+            if (nameInput.disabled || priceInput.disabled ||
+                getComputedStyle(nameInput).pointerEvents === 'none' ||
+                getComputedStyle(priceInput).pointerEvents === 'none' ||
+                parseFloat(getComputedStyle(nameInput).opacity) < 0.5 ||
+                parseFloat(getComputedStyle(priceInput).opacity) < 0.5) {
+                console.warn('⚠️ Buy price inputs detected as blocked, recovering...');
+                enableBuyPriceInputs();
+            }
+        }
+    }, 500);
     
     // Загрузка данных
     loadItems();
@@ -564,16 +584,47 @@ function enableBuyPriceInputs() {
     const priceInput = document.getElementById('itemPriceInput');
     
     if (nameInput) {
+        // Убираем все блокирующие атрибуты и стили
         nameInput.disabled = false;
+        nameInput.readOnly = false;
+        nameInput.setAttribute('aria-disabled', 'false');
+        
+        // Очищаем все блокирующие стили
         nameInput.style.pointerEvents = 'auto';
         nameInput.style.opacity = '1';
         nameInput.style.cursor = 'text';
+        nameInput.style.userSelect = 'auto';
+        nameInput.style.WebkitUserSelect = 'auto';
+        nameInput.style.MozUserSelect = 'auto';
+        nameInput.style.msUserSelect = 'auto';
+        nameInput.style.visibility = 'visible';
+        nameInput.style.display = 'block';
+        
+        // Удаляем все классы которые могут блокировать
+        nameInput.classList.remove('disabled');
+        nameInput.classList.remove('readonly');
     }
+    
     if (priceInput) {
+        // Убираем все блокирующие атрибуты и стили
         priceInput.disabled = false;
+        priceInput.readOnly = false;
+        priceInput.setAttribute('aria-disabled', 'false');
+        
+        // Очищаем все блокирующие стили
         priceInput.style.pointerEvents = 'auto';
         priceInput.style.opacity = '1';
         priceInput.style.cursor = 'text';
+        priceInput.style.userSelect = 'auto';
+        priceInput.style.WebkitUserSelect = 'auto';
+        priceInput.style.MozUserSelect = 'auto';
+        priceInput.style.msUserSelect = 'auto';
+        priceInput.style.visibility = 'visible';
+        priceInput.style.display = 'block';
+        
+        // Удаляем все классы которые могут блокировать
+        priceInput.classList.remove('disabled');
+        priceInput.classList.remove('readonly');
     }
 }
 
