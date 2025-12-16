@@ -33,9 +33,24 @@ sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread"
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 
+@app.before_request
+def log_request():
+    """Логируем все входящие запросы"""
+    logger.info(f"📨 Incoming {request.method} {request.path}")
+    logger.info(f"   Headers: {dict(request.headers)}")
+
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    """Обработчик всех ошибок"""
+    logger.error(f"❌ ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
+    return jsonify({'error': str(e), 'type': type(e).__name__}), 500
+
+
 @app.route('/')
 def index():
     """Главная страница"""
+    logger.info("✅ Rendering index.html")
     return render_template('index.html')
 
 
