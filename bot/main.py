@@ -129,11 +129,13 @@ async def main():
     await set_bot_commands(bot)
     logger.info("Bot commands set")
     
-    # НЕ запускаем Flask на worker процессе (он запущен в web сервисе через gunicorn)
-    # Проверяем если это worker процесс
+    # НЕ запускаем Flask если это Railway (web сервис использует gunicorn)
+    # или если это worker процесс
+    is_railway = os.getenv("RAILWAY_ENVIRONMENT") is not None
     is_worker_only = os.getenv("RAILWAY_SERVICE") == "worker" or os.getenv("WORKER_ONLY") == "true"
     
-    if not is_worker_only:
+    # Запускаем веб-сервер ТОЛЬКО для локальной разработки
+    if not is_railway and not is_worker_only:
         # Генерируем SSL сертификаты
         cert_file, key_file = ensure_ssl_certs()
         
@@ -148,7 +150,10 @@ async def main():
         web_thread.start()
         logger.info("✅ Web server started on port 5000")
     else:
-        logger.info("⏭️  Skipping web server (running as worker only)")
+        if is_railway:
+            logger.info("⏭️  Skipping web server (Flask managed by gunicorn on Railway)")
+        else:
+            logger.info("⏭️  Skipping web server (running as worker only)")
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
