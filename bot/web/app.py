@@ -28,6 +28,9 @@ logger.info("🟢 bot.web.app: All imports successful")
 IS_GUNICORN = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 logger.info(f"🔧 IS_GUNICORN: {IS_GUNICORN}")
 logger.info(f"🔧 SERVER_SOFTWARE: {os.environ.get('SERVER_SOFTWARE', 'not set')}")
+logger.info(f"🔧 PORT env var: {os.environ.get('PORT', 'not set')}")
+logger.info(f"🔧 RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'not set')}")
+logger.info(f"🔧 RAILWAY_STATIC_URL: {os.environ.get('RAILWAY_STATIC_URL', 'not set')}")
 
 # Получаем абсолютные пути
 BASE_DIR = Path(__file__).parent
@@ -585,4 +588,12 @@ def run_web_server(port=5000, cert_file=None, key_file=None):
         ssl_context = (cert_file, key_file)
     
     app.run(host='0.0.0.0', port=port, debug=False, ssl_context=ssl_context, use_reloader=False)
+
+
+# Финальная проверка при импорте
+logger.info(f"✅ Flask app is ready! Routes: {len(app.url_map._rules)} routes registered")
+logger.info(f"   Routes: {[str(rule) for rule in app.url_map.iter_rules()][:5]}...")
+print("✅ bot.web.app module loaded successfully!", file=sys.stderr)
+sys.stderr.flush()
+
 
