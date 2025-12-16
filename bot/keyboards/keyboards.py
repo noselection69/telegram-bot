@@ -1,4 +1,8 @@
+import os
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+
+# Получаем URL из переменных окружения
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://192.168.1.122:5000")
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
@@ -16,7 +20,7 @@ def get_resell_menu() -> InlineKeyboardMarkup:
     """Меню калькулятора перекупа - только Web App кнопка"""
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📊 Открыть", web_app=WebAppInfo(url="https://192.168.1.122:5000/#resell"))],
+            [InlineKeyboardButton(text="📊 Открыть", web_app=WebAppInfo(url=f"{WEBHOOK_URL}/#resell"))],
         ]
     )
     return keyboard
@@ -26,7 +30,7 @@ def get_rental_menu() -> InlineKeyboardMarkup:
     """Меню управления арендой - только Web App кнопка"""
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🚗 Открыть", web_app=WebAppInfo(url="https://192.168.1.122:5000/#rental"))],
+            [InlineKeyboardButton(text="🚗 Открыть", web_app=WebAppInfo(url=f"{WEBHOOK_URL}/#rental"))],
         ]
     )
     return keyboard
