@@ -133,15 +133,16 @@ async def main():
     cert_file, key_file = ensure_ssl_certs()
     
     # Запускаем веб-сервер в отдельном потоке
+    port = int(os.getenv("PORT", "5000"))  # Railway передаёт PORT в окружении
     if cert_file and key_file:
-        web_thread = threading.Thread(target=run_web_server, args=(5000, cert_file, key_file), daemon=True)
+        web_thread = threading.Thread(target=run_web_server, args=(port, cert_file, key_file), daemon=True)
         logger.info("🟢 Web server will use HTTPS")
     else:
-        web_thread = threading.Thread(target=run_web_server, args=(5000, None, None), daemon=True)
+        web_thread = threading.Thread(target=run_web_server, args=(port, None, None), daemon=True)
         logger.info("🟡 Web server will use HTTP")
     
     web_thread.start()
-    logger.info("✅ Web server started on port 5000")
+    logger.info(f"✅ Web server started on port {port}")
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
