@@ -129,16 +129,15 @@ async def main():
     await set_bot_commands(bot)
     logger.info("Bot commands set")
     
-    # Проверяем, запущены ли мы через gunicorn
-    # Если да - Flask уже запущен, не нужно запускать в отдельном потоке
-    is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+    # НЕ запускаем Flask на worker процессе (он запущен в web сервисе через gunicorn)
+    # Проверяем если это worker процесс
     is_worker_only = os.getenv("RAILWAY_SERVICE") == "worker" or os.getenv("WORKER_ONLY") == "true"
     
-    if not is_gunicorn and not is_worker_only:
+    if not is_worker_only:
         # Генерируем SSL сертификаты
         cert_file, key_file = ensure_ssl_certs()
         
-        # Запускаем веб-сервер в отдельном потоке с HTTPS (только для локальной разработки)
+        # Запускаем веб-сервер в отдельном потоке с HTTPS
         if cert_file and key_file:
             web_thread = threading.Thread(target=run_web_server, args=(5000, cert_file, key_file), daemon=True)
             logger.info("🟢 Web server will use HTTPS")
@@ -149,10 +148,7 @@ async def main():
         web_thread.start()
         logger.info("✅ Web server started on port 5000")
     else:
-        if is_gunicorn:
-            logger.info("⏭️  Skipping web server (Flask is managed by gunicorn)")
-        else:
-            logger.info("⏭️  Skipping web server (running as worker only)")
+        logger.info("⏭️  Skipping web server (running as worker only)")
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
