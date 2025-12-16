@@ -32,8 +32,11 @@ logger.info(f"STATIC_DIR: {STATIC_DIR} (exists: {STATIC_DIR.exists()})")
 app = Flask(__name__, template_folder=str(TEMPLATE_DIR), static_folder=str(STATIC_DIR))
 CORS(app)
 
+logger.info(f"✅ Flask app initialized with template_folder={app.template_folder}, static_folder={app.static_folder}")
+
 # Инициализируем синхронную БД для Flask
 SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+logger.info(f"Database URL: {SYNC_DATABASE_URL}")
 sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
@@ -57,6 +60,13 @@ def index():
     """Главная страница"""
     logger.info("✅ Rendering index.html")
     return render_template('index.html')
+
+
+@app.route('/health')
+def health():
+    """Healthcheck endpoint"""
+    logger.info("✅ Healthcheck called")
+    return jsonify({'status': 'ok', 'message': 'Flask is running'}), 200
 
 
 @app.route('/api/add-item', methods=['POST'])
