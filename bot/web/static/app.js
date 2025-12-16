@@ -57,6 +57,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Получаем ID пользователя
     userId = tg.initDataUnsafe?.user?.id || 0;
     
+    // Для отладки - если userId = 0, используем ID из Telegram параметров
+    if (!userId && tg.initData) {
+        // Пытаемся парсить initData
+        const params = new URLSearchParams(tg.initData);
+        const userParam = params.get('user');
+        if (userParam) {
+            try {
+                const userData = JSON.parse(userParam);
+                userId = userData.id;
+            } catch(e) {
+                console.warn('Failed to parse user from initData:', e);
+            }
+        }
+    }
+    
+    // Если всё ещё нет userId, используем тестовый ID
+    if (!userId) {
+        userId = 123456789; // Тестовый ID для отладки
+        console.warn('⚠️ Using test user ID:', userId);
+    }
+    
     console.log('🔍 Telegram Web App initialized');
     console.log('User ID:', userId);
     console.log('User:', tg.initDataUnsafe?.user);
