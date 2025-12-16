@@ -3,6 +3,17 @@ from flask_cors import CORS
 import logging
 import os
 from pathlib import Path
+
+# САМОЕ ПЕРВОЕ ЛОГИРОВАНИЕ
+import sys
+print("🟢 bot.web.app: Starting import...", file=sys.stderr)
+sys.stderr.flush()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info("🟢 bot.web.app: Logging configured")
+
+# Теперь остальные импорты
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from bot.models.database import User, Item, Car, Sale, Rental, CategoryEnum
@@ -11,8 +22,7 @@ from bot.config import DATABASE_URL
 from datetime import datetime, timedelta
 import pytz
 
-# Настройка логирования
-logger = logging.getLogger(__name__)
+logger.info("🟢 bot.web.app: All imports successful")
 
 # Проверяем, запущены ли мы через gunicorn (WSGI)
 IS_GUNICORN = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
@@ -35,10 +45,15 @@ CORS(app)
 logger.info(f"✅ Flask app initialized with template_folder={app.template_folder}, static_folder={app.static_folder}")
 
 # Инициализируем синхронную БД для Flask
-SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
-logger.info(f"Database URL: {SYNC_DATABASE_URL}")
-sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+try:
+    SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+    logger.info(f"Database URL: {SYNC_DATABASE_URL}")
+    sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+    logger.info("✅ Database engine initialized")
+except Exception as e:
+    logger.error(f"❌ Database initialization error: {e}", exc_info=True)
+    SessionLocal = None
 
 
 @app.before_request
