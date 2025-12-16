@@ -10,9 +10,17 @@ from bot.utils.datetime_helper import get_moscow_now
 from bot.config import DATABASE_URL
 from datetime import datetime, timedelta
 import pytz
+import threading
+import asyncio
+from bot.main import dp, bot, check_rental_notifications, initialize_database
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
+
+# Проверяем, запущены ли мы через gunicorn (WSGI)
+IS_GUNICORN = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+logger.info(f"🔧 IS_GUNICORN: {IS_GUNICORN}")
+logger.info(f"🔧 SERVER_SOFTWARE: {os.environ.get('SERVER_SOFTWARE', 'not set')}")
 
 # Получаем абсолютные пути
 BASE_DIR = Path(__file__).parent
@@ -31,6 +39,42 @@ CORS(app)
 SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
 sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+
+
+# ============= БОТ ИНИЦИАЛИЗАЦИЯ (для gunicorn) =============
+async def run_bot_polling():
+    """Запускает bot polling в async loop"""
+    try:
+        logger.info("🤖 Starting bot polling from Flask...")
+        await initialize_database()
+        notification_task = asyncio.create_task(check_rental_notifications(bot))
+        await dp.start_polling(bot)
+    except Exception as e:
+        logger.error(f"❌ Bot polling error: {e}", exc_info=True)
+
+
+def start_bot_in_background():
+    """Запускает bot в отдельном потоке"""
+    if IS_GUNICORN:
+        logger.info("🟢 Starting bot polling thread (gunicorn mode)...")
+        
+        def run_bot():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(run_bot_polling())
+            finally:
+                loop.close()
+        
+        bot_thread = threading.Thread(target=run_bot, daemon=True)
+        bot_thread.start()
+        logger.info("✅ Bot polling thread started")
+
+
+# Инициализируем бота при старте Flask
+with app.app_context():
+    start_bot_in_background()
+# ============= КОНЕЦ БОТ ИНИЦИАЛИЗАЦИИ =============
 
 
 @app.before_request
