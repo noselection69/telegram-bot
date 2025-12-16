@@ -28,6 +28,11 @@ try:
     SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+    
+    # Создаём все таблицы (включая новую BuyPrice таблицу)
+    from bot.models.database import Base
+    Base.metadata.create_all(bind=sync_engine)
+    logger.info("✅ Database tables created/verified")
 except Exception as e:
     logger.error(f"Database error: {e}")
     SessionLocal = None
