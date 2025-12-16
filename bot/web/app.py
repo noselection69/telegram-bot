@@ -379,9 +379,11 @@ def get_items():
 
 @app.route('/api/get-sales', methods=['GET'])
 def get_sales():
-    """Получить историю продаж"""
+    """Получить историю продаж с фильтрацией"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
+        time_filter = request.args.get('time_filter', 'all')  # day, week, all
+        deal_filter = request.args.get('deal_filter', 'all')  # best, worst, all
         
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
@@ -401,6 +403,22 @@ def get_sales():
             
             # Получаем все продажи для товаров пользователя
             sales = session.query(Sale).join(Item).filter(Item.user_id == user.id).all()
+            
+            # Фильтруем по времени
+            if time_filter == 'day':
+                from datetime import datetime, timedelta
+                today = get_moscow_now().replace(hour=0, minute=0, second=0, microsecond=0)
+                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= today]
+            elif time_filter == 'week':
+                from datetime import datetime, timedelta
+                week_ago = get_moscow_now() - timedelta(days=7)
+                sales = [s for s in sales if s.sale_date and s.sale_date >= week_ago]
+            
+            # Сортируем по типу сделок
+            if deal_filter == 'best':
+                sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price), reverse=True)
+            elif deal_filter == 'worst':
+                sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price))
             
             total_income = sum(float(sale.sale_price) for sale in sales)
             total_profit = sum(float(sale.sale_price) - float(sale.item.purchase_price) for sale in sales)

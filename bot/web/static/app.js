@@ -674,11 +674,26 @@ function searchBuyPrices() {
     });
 }
 
-function loadStatistics() {
+function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
     const statsContent = document.getElementById('statisticsContent');
     statsContent.innerHTML = '<p class="loading">Загрузка статистики...</p>';
     
-    fetch('/api/get-sales', {
+    // Обновляем активные кнопки фильтров
+    document.getElementById('filterDay').style.background = timeFilter === 'day' ? 'var(--accent-color)' : 'var(--btn-bg)';
+    document.getElementById('filterWeek').style.background = timeFilter === 'week' ? 'var(--accent-color)' : 'var(--btn-bg)';
+    document.getElementById('filterAll').style.background = timeFilter === 'all' ? 'var(--accent-color)' : 'var(--btn-bg)';
+    
+    document.getElementById('filterBest').style.background = dealFilter === 'best' ? 'var(--success-color)' : 'var(--btn-bg)';
+    document.getElementById('filterWorst').style.background = dealFilter === 'worst' ? 'var(--danger-color)' : 'var(--btn-bg)';
+    document.getElementById('filterNone').style.background = dealFilter === 'all' ? 'var(--btn-bg)' : 'var(--btn-bg)';
+    
+    const params = new URLSearchParams();
+    if (timeFilter !== 'all') params.append('time_filter', timeFilter);
+    if (dealFilter !== 'all') params.append('deal_filter', dealFilter);
+    
+    const url = '/api/get-sales' + (params.toString() ? '?' + params.toString() : '');
+    
+    fetch(url, {
         headers: {
             'X-User-ID': userId
         }
@@ -687,10 +702,16 @@ function loadStatistics() {
     .then(data => {
         if (data.success) {
             const items_count = data.total_sales;
+            const timeLabel = timeFilter === 'day' ? 'за день' : timeFilter === 'week' ? 'за неделю' : 'всё время';
+            const dealLabel = dealFilter === 'best' ? ' (выгодные)' : dealFilter === 'worst' ? ' (невыгодные)' : '';
+            
             const content = `
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
+                    📊 Фильтр: ${timeLabel}${dealLabel}
+                </div>
                 <div class="stats-container">
                     <div class="stat-item">
-                        <span class="stat-label">Всего продано товаров:</span>
+                        <span class="stat-label">Продано товаров:</span>
                         <span class="stat-value">${items_count}</span>
                     </div>
                     <div class="stat-item">
@@ -699,15 +720,33 @@ function loadStatistics() {
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Общая прибыль:</span>
-                        <span class="stat-value">${formatPrice(data.total_profit)}$</span>
+                        <span class="stat-value" style="color: ${data.total_profit >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">${data.total_profit >= 0 ? '+' : ''}${formatPrice(data.total_profit)}$</span>
                     </div>
                     ${items_count > 0 ? `
                     <div class="stat-item">
                         <span class="stat-label">Средняя прибыль на товар:</span>
-                        <span class="stat-value">${formatPrice(data.total_profit / items_count)}$</span>
+                        <span class="stat-value" style="color: ${data.total_profit / items_count >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">${data.total_profit / items_count >= 0 ? '+' : ''}${formatPrice(data.total_profit / items_count)}$</span>
                     </div>
                     ` : ''}
                 </div>
+                ${items_count > 0 ? `
+                <div style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 10px;">Товары (${items_count}):</h4>
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        ${data.sales.map((sale, idx) => `
+                            <div style="padding: 8px; background: var(--bg-secondary); margin-bottom: 8px; border-radius: 4px; border-left: 3px solid ${sale.profit >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="flex: 1;"><strong>${sale.item_name}</strong></span>
+                                    <span style="color: ${sale.profit >= 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">${sale.profit >= 0 ? '+' : ''}${formatPrice(sale.profit)}$</span>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                    Куплено: ${formatPrice(sale.purchase_price)}$ → Продано: ${formatPrice(sale.sale_price)}$
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : '<p class="empty">📊 Нет данных для отображения</p>'}
             `;
             statsContent.innerHTML = content;
         } else {

@@ -92,6 +92,21 @@
                 <!-- Статистика -->
                 <div id="statisticsView" class="view hidden">
                     <h3>📈 Статистика</h3>
+                    
+                    <!-- Фильтры по времени -->
+                    <div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-info" id="filterDay" onclick="loadStatistics('day')">📅 За день</button>
+                        <button class="btn btn-info" id="filterWeek" onclick="loadStatistics('week')">📊 За неделю</button>
+                        <button class="btn btn-info" id="filterAll" onclick="loadStatistics('all')" style="background: var(--accent-color);">⏱️ За всё время</button>
+                    </div>
+                    
+                    <!-- Фильтры по типу сделок -->
+                    <div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-success" id="filterBest" onclick="loadStatistics(null, 'best')">💰 Выгодные</button>
+                        <button class="btn btn-danger" id="filterWorst" onclick="loadStatistics(null, 'worst')">📉 Невыгодные</button>
+                        <button class="btn btn-secondary" id="filterNone" onclick="loadStatistics()" style="background: var(--btn-bg);">✨ Все</button>
+                    </div>
+                    
                     <div id="statisticsContent"></div>
                     <button class="btn btn-secondary" onclick="hideStatistics()">← Назад</button>
                 </div>
