@@ -495,6 +495,32 @@ header h1 {
     margin-bottom: 10px;
 }
 
+/* Buy Price Form Styles */
+.buy-price-form {
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.buy-price-inputs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.buy-price-input {
+    flex: 1;
+    min-width: 100px;
+}
+
+.buy-price-btn {
+    flex-shrink: 0;
+    padding: 8px 12px !important;
+    min-width: 40px;
+}
+
 /* Адаптивность */
 @media (max-width: 480px) {
     .container {
@@ -517,5 +543,19 @@ header h1 {
     .tab-btn {
         padding: 10px 15px;
         font-size: 12px;
+    }
+    
+    /* Buy Price Form - Mobile */
+    .buy-price-inputs {
+        flex-direction: column;
+    }
+    
+    .buy-price-input {
+        width: 100%;
+    }
+    
+    .buy-price-btn {
+        width: 100%;
+        min-width: auto;
     }
 }

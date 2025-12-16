@@ -109,12 +109,12 @@
                 <div id="buyPricesView" class="view hidden">
                     <h3>💰 Цены скупа</h3>
                     
-                    <div class="form">
+                    <div class="form buy-price-form">
                         <h4 style="margin-bottom: 10px;">Добавить цену</h4>
-                        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                            <input type="text" id="itemNameInput" placeholder="Название товара" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
-                            <input type="number" id="itemPriceInput" placeholder="Цена" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
-                            <button class="btn btn-success" onclick="submitBuyPrice()" style="padding: 8px 16px;">➕</button>
+                        <div class="buy-price-inputs">
+                            <input type="text" id="itemNameInput" placeholder="Название товара" class="buy-price-input" style="padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
+                            <input type="number" id="itemPriceInput" placeholder="Цена" class="buy-price-input" style="padding: 8px; border-radius: 6px; border: 1px solid #404040; background: #2d2d2d; color: #e0e0e0;">
+                            <button class="btn btn-success buy-price-btn" onclick="submitBuyPrice()">➕</button>
                         </div>
                     </div>
                     
