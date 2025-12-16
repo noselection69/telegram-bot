@@ -82,12 +82,50 @@ def handle_error(e):
     print(f"❌ ERROR: {type(e).__name__}: {str(e)}", file=sys.stderr)
     sys.stderr.flush()
     return jsonify({'error': str(e), 'type': type(e).__name__}), 500
+# Флаг для отслеживания, запущен ли бот
+_bot_started = False
+_bot_lock = None
+
+
+def start_bot_if_needed():
+    """Запустить бота один раз при первом запросе"""
+    global _bot_started, _bot_lock
+    
+    import threading
+    if _bot_lock is None:
+        _bot_lock = threading.Lock()
+    
+    if not _bot_started:
+        with _bot_lock:
+            if not _bot_started:
+                logger.info("🤖 Starting bot polling in background thread...")
+                try:
+                    import asyncio
+                    from bot.main import main as bot_main
+                    
+                    def run_bot():
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            loop.run_until_complete(bot_main())
+                        except Exception as e:
+                            logger.error(f"❌ Bot error: {e}", exc_info=True)
+                        finally:
+                            loop.close()
+                    
+                    bot_thread = threading.Thread(target=run_bot, daemon=True)
+                    bot_thread.start()
+                    _bot_started = True
+                    logger.info("✅ Bot thread started")
+                except Exception as e:
+                    logger.error(f"❌ Failed to start bot: {e}", exc_info=True)
 
 
 try:
     @app.route('/')
     def index():
         """Главная страница"""
+        start_bot_if_needed()  # Запустим бота при первом обращении
         logger.info("✅ Rendering index.html")
         return render_template('index.html')
     print("✅ Route / registered", file=sys.stderr)
