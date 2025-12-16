@@ -129,17 +129,24 @@ async def main():
     await set_bot_commands(bot)
     logger.info("Bot commands set")
     
-    # Генерируем SSL сертификаты
-    cert_file, key_file = ensure_ssl_certs()
-    
-    # Запускаем веб-сервер в отдельном потоке
+    # На production (Railway) используем HTTP без SSL
+    # Railway автоматически добавляет HTTPS на уровне reverse proxy
     port = int(os.getenv("PORT", "5000"))  # Railway передаёт PORT в окружении
-    if cert_file and key_file:
-        web_thread = threading.Thread(target=run_web_server, args=(port, cert_file, key_file), daemon=True)
-        logger.info("🟢 Web server will use HTTPS")
-    else:
+    is_production = os.getenv("RAILWAY_ENVIRONMENT") is not None
+    
+    if is_production:
+        # На production: без SSL, Railway сам управляет HTTPS
         web_thread = threading.Thread(target=run_web_server, args=(port, None, None), daemon=True)
-        logger.info("🟡 Web server will use HTTP")
+        logger.info("🟡 Production mode: Web server will use HTTP (Railway handles HTTPS)")
+    else:
+        # Локально: пытаемся использовать SSL если доступны сертификаты
+        cert_file, key_file = ensure_ssl_certs()
+        if cert_file and key_file:
+            web_thread = threading.Thread(target=run_web_server, args=(port, cert_file, key_file), daemon=True)
+            logger.info("🟢 Development mode: Web server will use HTTPS")
+        else:
+            web_thread = threading.Thread(target=run_web_server, args=(port, None, None), daemon=True)
+            logger.info("🟡 Development mode: Web server will use HTTP")
     
     web_thread.start()
     logger.info(f"✅ Web server started on port {port}")
