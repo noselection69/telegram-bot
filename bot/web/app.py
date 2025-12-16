@@ -617,6 +617,7 @@ def get_buy_prices():
                         'id': price.id,
                         'item_name': price.item_name,
                         'price': price.price,
+                        'price_text': price.price_text,  # Добавляем оригинальный текст цены
                         'seller_name': price.seller_name or '📌 Неизвестно',
                         'created_at': price.created_at.isoformat()
                     }
@@ -655,7 +656,8 @@ def add_buy_price():
                 user_id=user.id,
                 seller_name=seller_name,
                 item_name=data['item_name'],
-                price=float(data['price'])
+                price=float(data['price']),
+                price_text=data.get('price_text')  # Сохраняем оригинальный текст
             )
             session.add(price)
             session.commit()

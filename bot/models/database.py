@@ -94,6 +94,7 @@ class BuyPrice(Base):
     seller_name = Column(String(255), nullable=True)  # Имя того, кто добавил цену
     item_name = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
+    price_text = Column(String(255), nullable=True)  # Оригинальный текст (300-350к, 5G и т.д.)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="buy_prices")

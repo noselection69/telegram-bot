@@ -579,7 +579,7 @@ async function loadBuyPrices() {
                         <h4>${price.item_name}</h4>
                         <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить">✕</button>
                     </div>
-                    <p class="item-price">💰 ${formatPrice(price.price)}$</p>
+                    <p class="item-price">💰 ${price.price_text || formatPrice(price.price)}$</p>
                     <p class="small" style="color: var(--text-secondary); margin-top: 4px;">� ${price.seller_name}</p>
                     <p class="small" style="color: var(--text-secondary); margin-top: 2px;">�📅 ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
                 </div>
@@ -594,16 +594,19 @@ async function loadBuyPrices() {
 }
 
 async function submitBuyPrice() {
-    const name = document.getElementById('itemNameInput').value.trim();
-    const priceInput = document.getElementById('itemPriceInput').value.trim();
+    const nameInput = document.getElementById('itemNameInput');
+    const priceInput = document.getElementById('itemPriceInput');
     
-    if (!name || !priceInput) {
+    const name = nameInput.value.trim();
+    const priceText = priceInput.value.trim();
+    
+    if (!name || !priceText) {
         showNotification('Заполните оба поля', 'warning');
         return;
     }
     
-    // Парсим цену - извлекаем только числа и точки
-    const price = parseFloat(priceInput.replace(/[^\d.]/g, ''));
+    // Парсим цену - извлекаем только числа и точки для валидации
+    const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
     
     if (isNaN(price) || price <= 0) {
         showNotification('Цена должна быть числом > 0', 'warning');
@@ -619,7 +622,8 @@ async function submitBuyPrice() {
             },
             body: JSON.stringify({
                 item_name: name,
-                price: price
+                price: price,
+                price_text: priceText  // Отправляем оригинальный текст
             })
         });
         
@@ -627,11 +631,11 @@ async function submitBuyPrice() {
         
         if (data.success) {
             showNotification('✅ Цена добавлена', 'success');
-            // Очищаем поля после успешного добавления
-            document.getElementById('itemNameInput').value = '';
-            document.getElementById('itemPriceInput').value = '';
-            // Даём фокус первому полю для удобства
-            document.getElementById('itemNameInput').focus();
+            // Очищаем поля
+            nameInput.value = '';
+            priceInput.value = '';
+            // Даём фокус первому полю
+            nameInput.focus();
             // Перезагружаем список
             await loadBuyPrices();
         } else {
