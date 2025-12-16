@@ -205,13 +205,17 @@ async function loadItems() {
                     </div>
                 </div>
             `).join('');
-        } else {
+        } else if (data.success) {
+            // Товары не добавлены или ошибка загрузки
             document.getElementById('itemsList').innerHTML = `
                 <div class="empty">
                     <p>📦 Товары будут отображаться здесь</p>
                     <p style="font-size: 12px; color: #bbb;">Добавьте первый товар кнопкой выше</p>
                 </div>
             `;
+        } else {
+            // Ошибка API
+            document.getElementById('itemsList').innerHTML = `<div class="empty">⚠️ Ошибка загрузки: ${data.error || 'Неизвестная ошибка'}</div>`;
         }
     } catch (error) {
         console.error('Error loading items:', error);
