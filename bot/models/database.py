@@ -26,6 +26,7 @@ class User(Base):
     items = relationship("Item", back_populates="user", cascade="all, delete-orphan")
     cars = relationship("Car", back_populates="user", cascade="all, delete-orphan")
     rentals = relationship("Rental", back_populates="user", cascade="all, delete-orphan")
+    buy_prices = relationship("BuyPrice", back_populates="user", cascade="all, delete-orphan")
 
 
 class Item(Base):
@@ -83,3 +84,15 @@ class Rental(Base):
     
     user = relationship("User", back_populates="rentals")
     car = relationship("Car", back_populates="rentals")
+
+
+class BuyPrice(Base):
+    __tablename__ = "buy_prices"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    item_name = Column(String(255), nullable=False)
+    price = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="buy_prices")

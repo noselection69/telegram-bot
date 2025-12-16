@@ -35,6 +35,7 @@
                     <button class="btn btn-info" onclick="showInventory()">📋 Инвентарь</button>
                     <button class="btn btn-info" onclick="showStatistics()">📈 Статистика</button>
                     <button class="btn btn-info" onclick="showHistory()">📜 История продаж</button>
+                    <button class="btn btn-info" onclick="showBuyPrices()">💰 Цены скупа</button>
                 </div>
 
                 <!-- Форма добавления товара -->
@@ -58,7 +59,7 @@
                         </div>
 
                         <div class="form-field">
-                            <label>Цена покупки (₽):</label>
+                            <label>Цена покупки ($):</label>
                             <input type="number" id="itemPrice" placeholder="50000" step="0.01" required>
                         </div>
 
@@ -103,6 +104,29 @@
                     </div>
                     <button class="btn btn-secondary" onclick="hideHistory()">← Назад</button>
                 </div>
+                
+                <!-- Цены скупа -->
+                <div id="buyPricesView" class="view hidden">
+                    <h3>💰 Цены скупа</h3>
+                    
+                    <div class="form" style="background: var(--bg-secondary);">
+                        <h4 style="margin-bottom: 10px;">Добавить цену</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="itemNameInput" placeholder="Название товара" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                            <input type="number" id="itemPriceInput" placeholder="Цена" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                            <button class="btn btn-success" onclick="submitBuyPrice()" style="padding: 8px 16px;">➕</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="buyPriceSearch" placeholder="Поиск..." onkeyup="searchBuyPrices()" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                    </div>
+                    
+                    <div id="buyPricesList" class="items-list">
+                        <p class="loading">Загрузка...</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="hideBuyPrices()">← Назад</button>
+                </div>
             </div>
         </section>
 
@@ -128,7 +152,7 @@
                         </div>
 
                         <div class="form-field">
-                            <label>Стоимость авто (₽):</label>
+                            <label>Стоимость авто ($):</label>
                             <input type="number" id="carCost" placeholder="500000" step="0.01" required>
                         </div>
 
@@ -180,7 +204,7 @@
                 <input type="hidden" id="rentalCarId">
                 
                 <div class="form-field">
-                    <label>Цена за час (₽):</label>
+                    <label>Цена за час ($):</label>
                     <input type="number" id="rentalPrice" placeholder="500" step="0.01" required>
                 </div>
 

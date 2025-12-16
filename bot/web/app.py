@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from bot.models.database import User, Item, Car, Sale, Rental, CategoryEnum
+from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum
 from bot.utils.datetime_helper import get_moscow_now
 from bot.config import DATABASE_URL
 from datetime import datetime, timedelta
@@ -144,7 +144,7 @@ def sell_item():
             
             return jsonify({
                 'success': True,
-                'message': f'Товар продан за {sale_price}₽',
+                'message': f'Товар продан за {sale_price}$',
                 'profit': profit
             })
         finally:
@@ -270,7 +270,7 @@ def rent_car():
             
             return jsonify({
                 'success': True,
-                'message': f'Аренда записана! Доход: {total_income}₽',
+                'message': f'Аренда записана! Доход: {total_income}$',
                 'income': total_income
             })
         finally:
@@ -564,6 +564,110 @@ def delete_item(item_id):
             session.close()
     except Exception as e:
         logger.error(f"Error deleting item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# === ЦЕНЫ СКУПА (BUY PRICES) ===
+
+@app.route('/api/get-buy-prices', methods=['GET'])
+def get_buy_prices():
+    """Получить цены скупа пользователя"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            
+            if not user:
+                return jsonify({'success': True, 'prices': []})
+            
+            prices = session.query(BuyPrice).filter(BuyPrice.user_id == user.id).order_by(BuyPrice.created_at.desc()).all()
+            
+            return jsonify({
+                'success': True,
+                'prices': [
+                    {
+                        'id': price.id,
+                        'item_name': price.item_name,
+                        'price': price.price,
+                        'created_at': price.created_at.isoformat()
+                    }
+                    for price in prices
+                ]
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error in get_buy_prices: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/add-buy-price', methods=['POST'])
+def add_buy_price():
+    """Добавить цену скупа"""
+    try:
+        data = request.json
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user:
+                user = User(telegram_id=user_id)
+                session.add(user)
+                session.flush()
+            
+            price = BuyPrice(
+                user_id=user.id,
+                item_name=data['item_name'],
+                price=float(data['price'])
+            )
+            session.add(price)
+            session.commit()
+            
+            return jsonify({'success': True, 'message': 'Цена добавлена'})
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error in add_buy_price: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/delete-buy-price/<int:price_id>', methods=['DELETE'])
+def delete_buy_price(price_id):
+    """Удалить цену скупа"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            price = session.query(BuyPrice).filter(BuyPrice.id == price_id).first()
+            
+            if not price:
+                return jsonify({'success': False, 'error': 'Price not found'}), 404
+            
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user or price.user_id != user.id:
+                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            
+            session.delete(price)
+            session.commit()
+            
+            return jsonify({'success': True, 'message': 'Цена удалена'})
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error deleting buy price: {e}")
         return jsonify({'success': False, 'error': str(e)}), 400
 
 

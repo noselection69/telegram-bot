@@ -4,6 +4,11 @@ const tg = window.Telegram.WebApp;
 // Инициализация
 let userId = null;
 
+// Функция для форматирования цен (1000000 -> 1.000.000)
+function formatPrice(price) {
+    return Number(price).toLocaleString('ru-RU');
+}
+
 // Функция переключения темы
 function toggleTheme() {
     const body = document.body;
@@ -15,7 +20,13 @@ function toggleTheme() {
         localStorage.setItem('theme', 'light');
         themeToggle.textContent = '🌙';
     } else {
-        body.classList.remove('light-theme');
+        body.c            carsList2.innerHTML = data.cars.map(car => `
+                <div class="item-card">
+                    <h4>${car.name}</h4>
+                    <p class="item-price">💰 ${formatPrice(car.cost)}$</p>
+                    <button class="btn btn-small btn-danger" onclick="deleteCar(${car.id})">🗑️ Удалить</button>
+                </div>
+            `).join('');t.remove('light-theme');
         localStorage.setItem('theme', 'dark');
         themeToggle.textContent = '☀️';
     }
@@ -151,15 +162,15 @@ async function loadItems() {
                 <div class="item-card">
                     <div class="item-header">
                         <h4>${item.name}</h4>
-                        <span class="badge ${item.sold ? 'sold' : 'unsold'}">
-                            ${item.sold ? '✅ Продано' : '⏳ В наличии'}
-                        </span>
+                        <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
                     </div>
+                    <span class="badge ${item.sold ? 'sold' : 'unsold'}">
+                        ${item.sold ? '✅ Продано' : '⏳ В наличии'}
+                    </span>
                     <p class="item-category">📁 ${item.category}</p>
-                    <p class="item-price">💰 ${item.price}₽</p>
+                    <p class="item-price">💰 ${formatPrice(item.price)}$</p>
                     <div class="btn-group">
                         ${!item.sold ? `<button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})">💵 Продать</button>` : ''}
-                        <button class="btn btn-small btn-danger" onclick="deleteItem(${item.id})">🗑️ Удалить</button>
                     </div>
                 </div>
             `).join('');
@@ -178,7 +189,7 @@ async function loadItems() {
 }
 
 function sellItem(itemId) {
-    const price = prompt('Введите цену продажи (₽):');
+    const price = prompt('Введите цену продажи ($):');
     if (!price) return;
     
     submitSellItem(itemId, parseFloat(price));
@@ -200,7 +211,7 @@ async function submitSellItem(itemId, salePrice) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}₽`, 'success');
+            showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}$`, 'success');
             loadItems();
         } else {
             showNotification(result.error, 'error');
@@ -268,7 +279,7 @@ async function loadCars() {
             document.getElementById('carsList').innerHTML = data.cars.map(car => `
                 <div class="car-card">
                     <h4>${car.name}</h4>
-                    <p class="car-cost">💰 ${car.cost}₽</p>
+                    <p class="car-cost">💰 ${formatPrice(car.cost)}$</p>
                     <button class="btn btn-small" onclick="openRentalModal(${car.id}, '${car.name}')">💼 Сдать в аренду</button>
                 </div>
             `).join('');
@@ -301,7 +312,7 @@ function openRentalModal(carId, carName) {
 }
 
 function openSaleModal(itemId, itemName, itemPrice) {
-    const price = prompt(`💵 Введите цену продажи "${itemName}" (куплено за ${itemPrice}₽):`, itemPrice);
+    const price = prompt(`💵 Введите цену продажи "${itemName}" (куплено за ${itemPrice}$):`, itemPrice);
     if (!price) return;
     submitSellItem(itemId, parseFloat(price));
 }
@@ -441,24 +452,29 @@ async function loadInventory() {
         const data = await response.json();
         
         if (data.success && data.items.length > 0) {
-            inventoryList.innerHTML = data.items.map(item => `
-                <div class="item-card">
-                    <div class="item-header">
-                        <h4>${item.name}</h4>
-                        <span class="badge ${item.sold ? 'sold' : 'unsold'}">
-                            ${item.sold ? '✅ Продано' : '⏳ В наличии'}
-                        </span>
+            // Фильтруем только непроданные товары
+            const unsoldItems = data.items.filter(item => !item.sold);
+            
+            if (unsoldItems.length > 0) {
+                inventoryList.innerHTML = unsoldItems.map(item => `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <h4>${item.name}</h4>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+                        </div>
+                        <span class="badge unsold">⏳ В наличии</span>
+                        <p class="item-category">📁 ${item.category}</p>
+                        <p class="item-price">💰 ${formatPrice(item.price)}$</p>
+                        <div class="btn-group">
+                            <button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})">💵 Продать</button>
+                        </div>
                     </div>
-                    <p class="item-category">📁 ${item.category}</p>
-                    <p class="item-price">💰 ${item.price}₽</p>
-                    <div class="btn-group">
-                        ${!item.sold ? `<button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})">💵 Продать</button>` : ''}
-                        <button class="btn btn-small btn-danger" onclick="deleteItem(${item.id})">🗑️ Удалить</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            } else {
+                inventoryList.innerHTML = '<p class="empty">📦 Нет товаров в наличии</p>';
+            }
         } else {
-            inventoryList.innerHTML = '<p class="empty">Товаров нет</p>';
+            inventoryList.innerHTML = '<p class="empty">📦 Товаров нет</p>';
         }
     } catch (error) {
         console.error('Error loading inventory:', error);
@@ -498,6 +514,124 @@ function hideHistory() {
     document.getElementById('historyView').classList.add('hidden');
 }
 
+// === ЦЕНЫ СКУПА ===
+
+function showBuyPrices() {
+    const buyPrices = document.getElementById('buyPricesView');
+    if (buyPrices.classList.contains('hidden')) {
+        document.getElementById('addItemForm').classList.add('hidden');
+        buyPrices.classList.remove('hidden');
+        loadBuyPrices();
+        buyPrices.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        hideBuyPrices();
+    }
+}
+
+function hideBuyPrices() {
+    document.getElementById('buyPricesView').classList.add('hidden');
+}
+
+async function loadBuyPrices() {
+    const buyPricesList = document.getElementById('buyPricesList');
+    buyPricesList.innerHTML = '<p class="loading">Загрузка...</p>';
+    
+    try {
+        const response = await fetch('/api/get-buy-prices', {
+            headers: {'X-User-ID': userId}
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.prices.length > 0) {
+            buyPricesList.innerHTML = data.prices.map(price => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <h4>${price.item_name}</h4>
+                        <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить">✕</button>
+                    </div>
+                    <p class="item-price">💰 ${formatPrice(price.price)}$</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;">📅 ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
+                </div>
+            `).join('');
+        } else {
+            buyPricesList.innerHTML = '<p class="empty">💰 Цены не добавлены</p>';
+        }
+    } catch (error) {
+        console.error('Error loading buy prices:', error);
+        buyPricesList.innerHTML = '<p class="error">Ошибка загрузки</p>';
+    }
+}
+
+async function submitBuyPrice() {
+    const name = document.getElementById('itemNameInput').value.trim();
+    const price = document.getElementById('itemPriceInput').value;
+    
+    if (!name || !price) {
+        showNotification('Заполните оба поля', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/add-buy-price', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-ID': userId
+            },
+            body: JSON.stringify({
+                item_name: name,
+                price: parseFloat(price)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('✅ Цена добавлена', 'success');
+            document.getElementById('itemNameInput').value = '';
+            document.getElementById('itemPriceInput').value = '';
+            loadBuyPrices();
+        } else {
+            showNotification(data.error || 'Ошибка добавления', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка: ' + error.message, 'error');
+    }
+}
+
+async function deleteBuyPrice(priceId) {
+    if (!confirm('Удалить эту цену?')) return;
+    
+    try {
+        const response = await fetch(`/api/delete-buy-price/${priceId}`, {
+            method: 'DELETE',
+            headers: {'X-User-ID': userId}
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('✅ Цена удалена', 'success');
+            loadBuyPrices();
+        } else {
+            showNotification(data.error || 'Ошибка удаления', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка: ' + error.message, 'error');
+    }
+}
+
+function searchBuyPrices() {
+    const query = document.getElementById('buyPriceSearch').value.toLowerCase();
+    const items = document.getElementById('buyPricesList').querySelectorAll('.item-card');
+    
+    items.forEach(item => {
+        const name = item.querySelector('h4').textContent.toLowerCase();
+        item.style.display = name.includes(query) ? 'block' : 'none';
+    });
+}
+
 function loadStatistics() {
     const statsContent = document.getElementById('statisticsContent');
     statsContent.innerHTML = '<p class="loading">Загрузка статистики...</p>';
@@ -519,16 +653,16 @@ function loadStatistics() {
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Общий доход:</span>
-                        <span class="stat-value">${data.total_income.toLocaleString('ru-RU')}₽</span>
+                        <span class="stat-value">${formatPrice(data.total_income)}$</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Общая прибыль:</span>
-                        <span class="stat-value">${data.total_profit.toLocaleString('ru-RU')}₽</span>
+                        <span class="stat-value">${formatPrice(data.total_profit)}$</span>
                     </div>
                     ${items_count > 0 ? `
                     <div class="stat-item">
                         <span class="stat-label">Средняя прибыль на товар:</span>
-                        <span class="stat-value">${(data.total_profit / items_count).toLocaleString('ru-RU')}₽</span>
+                        <span class="stat-value">${formatPrice(data.total_profit / items_count)}$</span>
                     </div>
                     ` : ''}
                 </div>
@@ -559,10 +693,10 @@ function loadHistory() {
             historyList.innerHTML = data.sales.map(sale => `
                 <div class="item-card">
                     <h4>${sale.item_name}</h4>
-                    <p>💵 Продано за: <strong>${sale.sale_price}₽</strong></p>
-                    <p>💰 Куплено за: ${sale.purchase_price}₽</p>
+                    <p>💵 Продано за: <strong>${formatPrice(sale.sale_price)}$</strong></p>
+                    <p>💰 Куплено за: ${formatPrice(sale.purchase_price)}$</p>
                     <p class="profit ${sale.profit >= 0 ? 'positive' : 'negative'}">
-                        📈 Прибыль: ${sale.profit >= 0 ? '+' : ''}${sale.profit}₽
+                        📈 Прибыль: ${sale.profit >= 0 ? '+' : ''}${formatPrice(sale.profit)}$
                     </p>
                     <p class="small">📅 ${new Date(sale.created_at).toLocaleString('ru-RU')}</p>
                 </div>
@@ -640,9 +774,11 @@ function loadCarsForView() {
         if (data.success && data.cars.length > 0) {
             carsList2.innerHTML = data.cars.map(car => `
                 <div class="item-card">
-                    <h4>${car.name}</h4>
-                    <p class="item-price">💰 ${car.cost}₽</p>
-                    <button class="btn btn-small btn-danger" onclick="deleteCar(${car.id})">🗑️ Удалить</button>
+                    <div class="item-header">
+                        <h4>${car.name}</h4>
+                        <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить">✕</button>
+                    </div>
+                    <p class="item-price">💰 ${formatPrice(car.cost)}$</p>
                 </div>
             `).join('');
         } else {
@@ -676,12 +812,12 @@ function loadRentalStats() {
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Общий доход:</span>
-                        <span class="stat-value">${data.total_income.toLocaleString('ru-RU')}₽</span>
+                        <span class="stat-value">${formatPrice(data.total_income)}$</span>
                     </div>
                     ${data.total_rentals > 0 ? `
                     <div class="stat-item">
                         <span class="stat-label">Средний доход на аренду:</span>
-                        <span class="stat-value">${(data.total_income / data.total_rentals).toLocaleString('ru-RU')}₽</span>
+                        <span class="stat-value">${formatPrice(data.total_income / data.total_rentals)}$</span>
                     </div>
                     ` : ''}
                 </div>
@@ -710,7 +846,7 @@ function loadActiveRentals() {
             activeList.innerHTML = data.rentals.map(rental => `
                 <div class="item-card">
                     <h4>${rental.car_name}</h4>
-                    <p>⏰ ${rental.hours}ч × ${rental.price_per_hour}₽ = <strong>${rental.total_income}₽</strong></p>
+                    <p>⏰ ${rental.hours}ч × ${formatPrice(rental.price_per_hour)}$ = <strong>${formatPrice(rental.total_income)}$</strong></p>
                     <p class="small">🕐 ${new Date(rental.rental_start).toLocaleString('ru-RU')}</p>
                     <p class="small">🕑 ${new Date(rental.rental_end).toLocaleString('ru-RU')}</p>
                 </div>
