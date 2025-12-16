@@ -146,6 +146,12 @@ function switchTab(tabName) {
         tab.classList.remove('active');
     });
     
+    // Закрываем все popup view'ы (статистика, история, цены скупа и т.д.)
+    document.getElementById('statisticsView')?.classList.add('hidden');
+    document.getElementById('historyView')?.classList.add('hidden');
+    document.getElementById('buyPricesView')?.classList.add('hidden');
+    document.getElementById('addItemForm')?.classList.add('hidden');
+    
     // Удаляем активный класс со всех кнопок
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');

@@ -6,6 +6,12 @@ import enum
 
 Base = declarative_base()
 
+# Импортируем функцию для получения времени в Москве
+def get_current_moscow_time():
+    """Получить текущее время в Москве"""
+    from bot.utils.datetime_helper import get_moscow_now
+    return get_moscow_now()
+
 
 class CategoryEnum(enum.Enum):
     ACCESSORY = "Аксессуар"
@@ -52,7 +58,7 @@ class Sale(Base):
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer, ForeignKey("items.id"), nullable=False)
     sale_price = Column(Float, nullable=False)
-    sale_date = Column(DateTime, default=datetime.utcnow)
+    sale_date = Column(DateTime, default=get_current_moscow_time)  # Используем Московское время
     
     item = relationship("Item", back_populates="sale")
 

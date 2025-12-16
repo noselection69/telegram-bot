@@ -32,10 +32,9 @@ try:
     # Создаём все таблицы (включая новую BuyPrice таблицу)
     from bot.models.database import Base
     Base.metadata.create_all(bind=sync_engine)
-    logger.info(f"✅ Flask Database initialized at: {SYNC_DATABASE_URL}")
     logger.info("✅ Database tables created/verified")
 except Exception as e:
-    logger.error(f"❌ Database error: {e}")
+    logger.error(f"Database error: {e}")
     SessionLocal = None
 
 
@@ -410,14 +409,27 @@ def get_sales():
             # Фильтруем по времени
             if time_filter == 'day':
                 from datetime import datetime, timedelta
+                # Получаем начало дня в Москве
                 today = get_moscow_now().replace(hour=0, minute=0, second=0, microsecond=0)
-                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= today.replace(tzinfo=None)]
+                # Получаем конец дня в Москве
+                tomorrow = today + timedelta(days=1)
+                
+                logger.info(f"📅 Filtering for day: {today} to {tomorrow}")
+                
+                # Сравниваем без timezone для корректности
+                sales = [s for s in sales if s.sale_date and 
+                        today.replace(tzinfo=None) <= s.sale_date.replace(tzinfo=None) < tomorrow.replace(tzinfo=None)]
             elif time_filter == 'week':
                 from datetime import datetime, timedelta
                 week_ago = get_moscow_now() - timedelta(days=7)
                 # Убираем timezone для корректного сравнения
                 week_ago_naive = week_ago.replace(tzinfo=None)
-                sales = [s for s in sales if s.sale_date and s.sale_date.replace(tzinfo=None) >= week_ago_naive]
+                now_naive = get_moscow_now().replace(tzinfo=None)
+                
+                logger.info(f"📊 Filtering for week: {week_ago_naive} to {now_naive}")
+                
+                sales = [s for s in sales if s.sale_date and 
+                        week_ago_naive <= s.sale_date.replace(tzinfo=None) <= now_naive]
             
             # Сортируем по типу сделок
             if deal_filter == 'best':
