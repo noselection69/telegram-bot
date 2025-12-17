@@ -967,7 +967,7 @@ function hideActiveRentals() {
 }
 
 function loadCarsForView() {
-    // Загружаем авто для просмотра (НЕ дублируем)
+    // Загружаем авто для просмотра с окупаемостью
     const carsList2 = document.getElementById('carsList2');
     carsList2.innerHTML = '<p class="loading">Загрузка...</p>';
     
@@ -977,15 +977,24 @@ function loadCarsForView() {
     .then(r => r.json())
     .then(data => {
         if (data.success && data.cars.length > 0) {
-            carsList2.innerHTML = data.cars.map(car => `
-                <div class="item-card">
-                    <div class="item-header">
-                        <h4>${car.name}</h4>
-                        <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить">✕</button>
+            carsList2.innerHTML = data.cars.map(car => {
+                const paybackColor = car.payback_percent >= 100 ? '#4caf50' : 
+                                    car.payback_percent >= 50 ? '#ff9800' : '#f44336';
+                return `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <h4>${car.name}</h4>
+                            <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить">✕</button>
+                        </div>
+                        <p class="item-price">💰 Стоимость: ${formatPrice(car.cost)}$</p>
+                        <p class="item-price">📊 Доход: ${formatPrice(car.total_income)}$</p>
+                        <div class="payback-bar">
+                            <div class="payback-fill" style="width: ${Math.min(100, car.payback_percent)}%; background-color: ${paybackColor};"></div>
+                        </div>
+                        <p class="payback-text">🎯 Окупилось: ${car.payback_percent}% (${car.rentals_count} аренд)</p>
                     </div>
-                    <p class="item-price">💰 ${formatPrice(car.cost)}$</p>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         } else {
             carsList2.innerHTML = '<p class="empty">Авто не добавлены</p>';
         }

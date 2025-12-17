@@ -86,6 +86,7 @@ class Rental(Base):
     hours = Column(Integer, nullable=False)
     rental_start = Column(DateTime, default=get_current_moscow_time)
     rental_end = Column(DateTime, nullable=False)
+    is_past = Column(Boolean, default=False)  # Флаг для уже прошедших аренд
     notified = Column(Boolean, default=False)
     
     user = relationship("User", back_populates="rentals")

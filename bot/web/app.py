@@ -324,7 +324,7 @@ def rent_car():
 
 @app.route('/api/get-cars', methods=['GET'])
 def get_cars():
-    """Получить список всех авто пользователя"""
+    """Получить список всех авто пользователя с окупаемостью"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         
@@ -343,16 +343,29 @@ def get_cars():
             
             cars = session.query(Car).filter(Car.user_id == user.id).all()
             
+            cars_list = []
+            for car in cars:
+                # Рассчитываем общий доход этого авто
+                rentals = session.query(Rental).filter(Rental.car_id == car.id).all()
+                total_income = sum(float(r.price_per_hour) * r.hours for r in rentals)
+                
+                # Рассчитываем процент окупаемости
+                payback_percent = 0
+                if car.cost > 0:
+                    payback_percent = min(100, (total_income / car.cost) * 100)
+                
+                cars_list.append({
+                    'id': car.id,
+                    'name': car.name,
+                    'cost': float(car.cost),
+                    'total_income': total_income,
+                    'payback_percent': round(payback_percent, 1),
+                    'rentals_count': len(rentals)
+                })
+            
             return jsonify({
                 'success': True,
-                'cars': [
-                    {
-                        'id': car.id,
-                        'name': car.name,
-                        'cost': float(car.cost)
-                    }
-                    for car in cars
-                ]
+                'cars': cars_list
             })
         finally:
             session.close()
@@ -493,7 +506,7 @@ def get_sales():
 
 @app.route('/api/get-rentals', methods=['GET'])
 def get_rentals():
-    """Получить активные аренды (только текущие)"""
+    """Получить активные аренды (только текущие) с московским временем"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         
@@ -517,6 +530,20 @@ def get_rentals():
                 Rental.rental_end > now
             ).all()
             
+            # Форматируем даты в московское время
+            def format_moscow_time(dt):
+                if not dt:
+                    return None
+                if dt.tzinfo is None:
+                    # Если naive datetime, предполагаем Moscow timezone
+                    tz = pytz.timezone('Europe/Moscow')
+                    dt = tz.localize(dt)
+                else:
+                    # Если aware, преобразуем в Moscow timezone
+                    tz = pytz.timezone('Europe/Moscow')
+                    dt = dt.astimezone(tz)
+                return dt.strftime('%d.%m.%Y %H:%M')
+            
             return jsonify({
                 'success': True,
                 'rentals': [
@@ -525,8 +552,8 @@ def get_rentals():
                         'car_name': rental.car.name,
                         'price_per_hour': float(rental.price_per_hour),
                         'hours': rental.hours,
-                        'rental_start': rental.rental_start.isoformat() if rental.rental_start else None,
-                        'rental_end': rental.rental_end.isoformat() if rental.rental_end else None,
+                        'rental_start': format_moscow_time(rental.rental_start),
+                        'rental_end': format_moscow_time(rental.rental_end),
                         'total_income': float(rental.price_per_hour) * rental.hours
                     }
                     for rental in rentals

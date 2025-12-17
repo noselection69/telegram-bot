@@ -184,7 +184,30 @@ async def rent_car_start(callback: CallbackQuery, state: FSMContext):
     """Начало процесса сдачи автомобиля в аренду"""
     car_id = int(callback.data.split("_")[2])
     await state.update_data(rental_car_id=car_id)
+    
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Да, уже прошла", callback_data="rental_is_past_yes"),
+            InlineKeyboardButton(text="❌ Нет, текущая", callback_data="rental_is_past_no")
+        ],
+        [InlineKeyboardButton(text="↩️ Отмена", callback_data="cancel")]
+    ])
+    
+    await callback.message.edit_text(
+        "❓ Это аренда, которая уже прошла в прошлом?",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("rental_is_past_"))
+async def set_rental_is_past(callback: CallbackQuery, state: FSMContext):
+    """Установить флаг прошедшей аренды"""
+    is_past = callback.data == "rental_is_past_yes"
+    await state.update_data(is_past=is_past)
     await state.set_state(RentCarStates.waiting_for_price_per_hour)
+    
     await callback.message.edit_text(
         "💰 Введите цену за час (только число):",
         reply_markup=get_cancel_keyboard()
@@ -229,20 +252,34 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
     try:
         data = await state.get_data()
         text = message.text
+        is_past = data.get('is_past', False)
         
         tz = pytz.timezone('Europe/Moscow')
         now = datetime.now(tz)
         
-        # Парсим время
-        if text.startswith("+"):
-            hours_to_add = int(text[1:])
-            end_time = now + timedelta(hours=hours_to_add)
-        else:
+        # Если это прошлая аренда, время может быть в прошлом
+        if is_past:
+            # Просто парсим время без проверки на будущее
             time_parts = text.split(":")
-            end_time = now.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=0, microsecond=0)
-            # Если время в прошлом, переносим на завтра
-            if end_time < now:
-                end_time += timedelta(days=1)
+            # Предполагаем дату сегодня
+            start_date = now.date()
+            start_time = tz.localize(datetime.combine(start_date, datetime.strptime(text, "%H:%M").time()))
+            
+            # Конец аренды = начало + hours
+            end_time = start_time + timedelta(hours=data['hours'])
+        else:
+            # Текущая аренда - обычная парсинг
+            if text.startswith("+"):
+                hours_to_add = int(text[1:])
+                end_time = now + timedelta(hours=hours_to_add)
+                start_time = now
+            else:
+                time_parts = text.split(":")
+                end_time = now.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=0, microsecond=0)
+                # Если время в прошлом, переносим на завтра
+                if end_time < now:
+                    end_time += timedelta(days=1)
+                start_time = now
         
         session = db.get_session()
         try:
@@ -252,23 +289,26 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
             )
             user = user.scalar_one()
             
-            # Создаем запись об аренде с московским временем
+            # Создаем запись об аренде
             rental = Rental(
                 user_id=user.id,
                 car_id=data['rental_car_id'],
                 price_per_hour=data['price_per_hour'],
                 hours=data['hours'],
-                rental_start=now,  # Явно передаем московское время
-                rental_end=end_time
+                rental_start=start_time,
+                rental_end=end_time,
+                is_past=is_past  # Устанавливаем флаг
             )
             session.add(rental)
             await session.commit()
             
             total_income = data['price_per_hour'] * data['hours']
+            past_label = "📅 (прошлая аренда)" if is_past else ""
             await message.answer(
-                f"✅ Автомобиль сдано в аренду!\n"
+                f"✅ Автомобиль сдано в аренду! {past_label}\n"
                 f"Цена: {data['price_per_hour']}₽/ч x {data['hours']} ч\n"
                 f"Общий доход: {total_income}₽\n"
+                f"Начало: {format_datetime(start_time)}\n"
                 f"Окончание: {format_datetime(end_time)}",
                 reply_markup=get_rental_menu()
             )
