@@ -276,12 +276,8 @@ async function loadItems() {
                 `;
             }
         } else if (data.success) {
-            // Товары не добавлены или ошибка загрузки
-            document.getElementById('itemsList').innerHTML = `
-                <div class="empty">
-                    <p>📦 Товаров нет</p>
-                </div>
-            `;
+            // Товары не добавлены или ошибка загрузки - просто очищаем список
+            document.getElementById('itemsList').innerHTML = '';
         } else {
             // Ошибка API
             document.getElementById('itemsList').innerHTML = `<div class="empty">⚠️ Ошибка загрузки: ${data.error || 'Неизвестная ошибка'}</div>`;
