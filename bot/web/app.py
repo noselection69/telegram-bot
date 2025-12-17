@@ -298,33 +298,51 @@ def rent_car():
                 session.flush()
             
             # Парсим время окончания
-            now = get_moscow_now()
+            now_moscow = get_moscow_now()
+            is_past = data.get('is_past', False)  # Флаг прошедшей аренды
             
             end_time_str = data['end_time'].strip()
-            logger.info(f"Parsing end_time: '{end_time_str}'")
+            logger.info(f"Parsing end_time: '{end_time_str}', is_past={is_past}")
+            
+            # Преобразуем в UTC для сохранения в БД
+            tz_utc = pytz.UTC
             
             try:
-                if end_time_str.startswith('+'):
-                    hours = int(end_time_str[1:].strip())
-                    rental_end = now + timedelta(hours=hours)
-                else:
-                    # Пробуем разные форматы
-                    if ':' in end_time_str:
-                        time_parts = end_time_str.split(':')
-                    elif ' ' in end_time_str:
-                        time_parts = end_time_str.split()
-                    else:
-                        raise ValueError("Invalid time format")
+                if is_past:
+                    # Для прошедшей аренды время это начало аренды
+                    if end_time_str.startswith('+'):
+                        raise ValueError("For past rentals, please use HH:MM format")
                     
+                    # Парсим время как start_time
+                    time_parts = end_time_str.split(':') if ':' in end_time_str else end_time_str.split()
                     hour = int(time_parts[0].strip())
                     minute = int(time_parts[1].strip()) if len(time_parts) > 1 else 0
-                    rental_end = now.replace(hour=hour, minute=minute, second=0)
-                    if rental_end < now:
-                        rental_end += timedelta(days=1)
+                    rental_start_moscow = now_moscow.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                    
+                    # Конец аренды = начало + часы
+                    rental_end_moscow = rental_start_moscow + timedelta(hours=int(data['hours']))
+                else:
+                    # Для текущей аренды
+                    if end_time_str.startswith('+'):
+                        hours = int(end_time_str[1:].strip())
+                        rental_end_moscow = now_moscow + timedelta(hours=hours)
+                    else:
+                        # Пробуем разные форматы
+                        time_parts = end_time_str.split(':') if ':' in end_time_str else end_time_str.split()
+                        hour = int(time_parts[0].strip())
+                        minute = int(time_parts[1].strip()) if len(time_parts) > 1 else 0
+                        rental_end_moscow = now_moscow.replace(hour=hour, minute=minute, second=0)
+                        if rental_end_moscow < now_moscow:
+                            rental_end_moscow += timedelta(days=1)
+                    
+                    rental_start_moscow = now_moscow
             except (ValueError, IndexError) as e:
                 logger.error(f"Error parsing time: {e}")
                 raise ValueError(f"Invalid time format: {end_time_str}")
 
+            # Конвертируем в UTC для сохранения в БД
+            rental_start_utc = rental_start_moscow.astimezone(tz_utc)
+            rental_end_utc = rental_end_moscow.astimezone(tz_utc)
             
             # Создаем запись об аренде
             rental = Rental(
@@ -332,25 +350,28 @@ def rent_car():
                 car_id=int(data['car_id']),
                 price_per_hour=float(data['price_per_hour']),
                 hours=int(data['hours']),
-                rental_end=rental_end
+                rental_start=rental_start_utc,
+                rental_end=rental_end_utc,
+                is_past=is_past  # Устанавливаем флаг прошедшей аренды
             )
             session.add(rental)
             session.commit()
             
             total_income = float(data['price_per_hour']) * int(data['hours'])
+            past_label = " (прошлая аренда)" if is_past else ""
             
-            logger.info(f"Rental added successfully: {rental.id}")
+            logger.info(f"Rental added successfully: {rental.id}{past_label}")
             
             return jsonify({
                 'success': True,
-                'message': f'Аренда записана! Доход: {total_income}$',
+                'message': f'Аренда записана! Доход: {total_income}${past_label}',
                 'income': total_income
             })
         finally:
             session.close()
     
     except Exception as e:
-        logger.error(f"Error in rent_car: {e}")
+        logger.error(f"Error in rent_car: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 400
 
 

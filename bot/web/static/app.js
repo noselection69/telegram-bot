@@ -471,11 +471,15 @@ function closeRentalModal() {
 async function submitRental(event) {
     event.preventDefault();
     
+    const isPastRadio = document.querySelector('input[name="rentalPast"]:checked');
+    const is_past = isPastRadio ? isPastRadio.value === 'true' : false;
+    
     const data = {
         car_id: parseInt(document.getElementById('rentalCarId').value),
         price_per_hour: parseFloat(document.getElementById('rentalPrice').value),
         hours: parseInt(document.getElementById('rentalHours').value),
-        end_time: document.getElementById('rentalEndTime').value
+        end_time: document.getElementById('rentalEndTime').value,
+        is_past: is_past  // Добавляем флаг прошедшей аренды
     };
     
     try {
@@ -494,6 +498,8 @@ async function submitRental(event) {
             showNotification(result.message, 'success');
             closeRentalModal();
             loadCars();
+            loadCarsForView();
+            loadActiveRentals();
         } else {
             showNotification(result.error, 'error');
         }
