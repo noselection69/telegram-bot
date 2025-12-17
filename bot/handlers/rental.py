@@ -259,16 +259,16 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
         text = message.text
         is_past = data.get('is_past', False)
         
-        tz = pytz.timezone('Europe/Moscow')
-        now = datetime.now(tz)
+        tz_moscow = pytz.timezone('Europe/Moscow')
+        now_moscow = get_moscow_now()  # Это уже aware datetime в Moscow TZ
         
         # Если это прошлая аренда, время может быть в прошлом
         if is_past:
             # Просто парсим время без проверки на будущее
             time_parts = text.split(":")
-            # Предполагаем дату сегодня
-            start_date = now.date()
-            start_time = tz.localize(datetime.combine(start_date, datetime.strptime(text, "%H:%M").time()))
+            # Предполагаем дату сегодня (в Москве)
+            start_date = now_moscow.date()
+            start_time = tz_moscow.localize(datetime.combine(start_date, datetime.strptime(text, "%H:%M").time()))
             
             # Конец аренды = начало + hours
             end_time = start_time + timedelta(hours=data['hours'])
@@ -276,15 +276,15 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
             # Текущая аренда - обычная парсинг
             if text.startswith("+"):
                 hours_to_add = int(text[1:])
-                end_time = now + timedelta(hours=hours_to_add)
-                start_time = now
+                end_time = now_moscow + timedelta(hours=hours_to_add)
+                start_time = now_moscow
             else:
                 time_parts = text.split(":")
-                end_time = now.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=0, microsecond=0)
+                end_time = now_moscow.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=0, microsecond=0)
                 # Если время в прошлом, переносим на завтра
-                if end_time < now:
+                if end_time < now_moscow:
                     end_time += timedelta(days=1)
-                start_time = now
+                start_time = now_moscow
         
         session = db.get_session()
         try:
@@ -294,14 +294,19 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
             )
             user = user.scalar_one()
             
+            # Конвертируем в UTC для хранения в БД
+            utc_tz = pytz.UTC
+            start_time_utc = start_time.astimezone(utc_tz) if start_time.tzinfo else utc_tz.localize(start_time)
+            end_time_utc = end_time.astimezone(utc_tz) if end_time.tzinfo else utc_tz.localize(end_time)
+            
             # Создаем запись об аренде
             rental = Rental(
                 user_id=user.id,
                 car_id=data['rental_car_id'],
                 price_per_hour=data['price_per_hour'],
                 hours=data['hours'],
-                rental_start=start_time,
-                rental_end=end_time,
+                rental_start=start_time_utc,
+                rental_end=end_time_utc,
                 is_past=is_past  # Устанавливаем флаг
             )
             session.add(rental)
@@ -319,8 +324,8 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
             )
         finally:
             await session.close()
-    except (ValueError, IndexError):
-        await message.answer("❌ Введите корректное время!")
+    except (ValueError, IndexError) as e:
+        await message.answer(f"❌ Введите корректное время! Ошибка: {e}")
     
     await state.clear()
 

@@ -571,15 +571,16 @@ def get_rentals():
                 if not dt:
                     return None
                 try:
+                    tz_moscow = pytz.timezone('Europe/Moscow')
+                    tz_utc = pytz.UTC
+                    
+                    # Если это naive datetime, предполагаем что это UTC (как мы сохраняем)
                     if dt.tzinfo is None:
-                        # Если naive datetime, предполагаем Moscow timezone
-                        tz = pytz.timezone('Europe/Moscow')
-                        dt = tz.localize(dt)
-                    else:
-                        # Если aware, преобразуем в Moscow timezone
-                        tz = pytz.timezone('Europe/Moscow')
-                        dt = dt.astimezone(tz)
-                    return dt.strftime('%d.%m.%Y %H:%M')
+                        dt = tz_utc.localize(dt)
+                    
+                    # Конвертируем в Moscow timezone
+                    dt_moscow = dt.astimezone(tz_moscow)
+                    return dt_moscow.strftime('%d.%m.%Y %H:%M')
                 except Exception as e:
                     logger.error(f"❌ Error formatting date {dt}: {e}")
                     return str(dt)
