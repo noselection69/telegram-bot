@@ -747,33 +747,42 @@ def delete_buy_price(price_id):
 
 @app.route('/api/debug-db', methods=['GET'])
 def debug_db():
-    """Диагностика БД - проверяем где хранится БД и есть ли данные"""
-    from bot.config import DB_PATH, DATA_DIR
+    """Диагностика БД - проверяем конфигурацию и данные"""
+    from bot.config import DATABASE_URL
     import os
     
     try:
-        db_exists = os.path.exists(DB_PATH)
-        db_size = os.path.getsize(DB_PATH) if db_exists else 0
+        db_info = {
+            'success': True,
+            'database_url': DATABASE_URL[:50] + '...' if len(DATABASE_URL) > 50 else DATABASE_URL,
+            'railway_environment': os.getenv("RAILWAY_ENVIRONMENT", "NOT_SET")
+        }
+        
+        # Определяем тип БД
+        if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+            db_info['db_type'] = 'PostgreSQL'
+            db_info['persistent'] = True
+        else:
+            db_info['db_type'] = 'SQLite'
+            db_info['persistent'] = False
         
         session = SessionLocal()
         try:
             items_count = session.query(Item).count()
             users_count = session.query(User).count()
             sales_count = session.query(Sale).count()
+            buy_prices_count = session.query(BuyPrice).count()
         finally:
             session.close()
         
-        return jsonify({
-            'success': True,
-            'db_path': str(DB_PATH),
-            'data_dir': str(DATA_DIR),
-            'db_exists': db_exists,
-            'db_size_bytes': db_size,
+        db_info.update({
             'items_count': items_count,
             'users_count': users_count,
             'sales_count': sales_count,
-            'railway_environment': os.getenv("RAILWAY_ENVIRONMENT", "NOT_SET")
+            'buy_prices_count': buy_prices_count
         })
+        
+        return jsonify(db_info)
     except Exception as e:
         logger.error(f"Error in debug_db: {e}")
         return jsonify({'success': False, 'error': str(e)}), 400
