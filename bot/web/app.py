@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum
 from bot.utils.datetime_helper import get_moscow_now
@@ -51,6 +51,29 @@ try:
     from bot.models.database import Base
     Base.metadata.create_all(bind=sync_engine)
     logger.info("✅ Database tables created/verified")
+    
+    # Проверяем и добавляем новые колонки если их нет (для PostgreSQL)
+    if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+        try:
+            with sync_engine.connect() as connection:
+                # Проверяем наличие колонки is_past в таблице rentals
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='rentals' AND column_name='is_past'
+                    );
+                    """)
+                )
+                if not result.scalar():
+                    logger.info("🔧 Adding is_past column to rentals table...")
+                    connection.execute(
+                        text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT FALSE;")
+                    )
+                    connection.commit()
+                    logger.info("✅ is_past column added")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
 except Exception as e:
     logger.error(f"❌ Database error: {e}")
     import traceback
