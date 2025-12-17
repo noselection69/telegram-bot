@@ -84,7 +84,7 @@ class Rental(Base):
     car_id = Column(Integer, ForeignKey("cars.id"), nullable=False)
     price_per_hour = Column(Float, nullable=False)
     hours = Column(Integer, nullable=False)
-    rental_start = Column(DateTime, default=datetime.utcnow)
+    rental_start = Column(DateTime, default=get_current_moscow_time)
     rental_end = Column(DateTime, nullable=False)
     notified = Column(Boolean, default=False)
     

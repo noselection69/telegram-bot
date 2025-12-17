@@ -252,12 +252,13 @@ async def receive_rental_end_time(message: Message, state: FSMContext):
             )
             user = user.scalar_one()
             
-            # Создаем запись об аренде
+            # Создаем запись об аренде с московским временем
             rental = Rental(
                 user_id=user.id,
                 car_id=data['rental_car_id'],
                 price_per_hour=data['price_per_hour'],
                 hours=data['hours'],
+                rental_start=now,  # Явно передаем московское время
                 rental_end=end_time
             )
             session.add(rental)
