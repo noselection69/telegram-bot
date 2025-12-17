@@ -266,8 +266,7 @@ async function loadItems() {
             // Товары не добавлены или ошибка загрузки
             document.getElementById('itemsList').innerHTML = `
                 <div class="empty">
-                    <p>📦 Товары будут отображаться здесь</p>
-                    <p style="font-size: 12px; color: #bbb;">Добавьте первый товар кнопкой выше</p>
+                    <p>📦 Товаров нет</p>
                 </div>
             `;
         } else {
@@ -567,7 +566,12 @@ async function loadInventory() {
                 inventoryList.innerHTML = '<p class="empty">📦 Нет товаров в наличии</p>';
             }
         } else {
-            inventoryList.innerHTML = '<p class="empty">📦 Товаров нет</p>';
+            inventoryList.innerHTML = `
+                <div class="empty">
+                    <p>📦 Товары будут отображаться здесь</p>
+                    <p style="font-size: 12px; color: #bbb;">Добавьте первый товар кнопкой выше</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Error loading inventory:', error);
