@@ -103,6 +103,8 @@ def add_item():
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
         
+        logger.info(f"💾 Adding item for user {user_id}: {data.get('name')}")
+        
         session = SessionLocal()
         try:
             # Получаем или создаем пользователя
@@ -111,6 +113,7 @@ def add_item():
                 user = User(telegram_id=user_id)
                 session.add(user)
                 session.flush()
+                logger.info(f"   Created new user: {user.id}")
             
             # Создаем товар
             item = Item(
@@ -123,6 +126,8 @@ def add_item():
             )
             session.add(item)
             session.commit()
+            
+            logger.info(f"✅ Item saved successfully: ID={item.id}, name={item.name}")
             
             return jsonify({
                 'success': True,
@@ -356,12 +361,14 @@ def get_items():
             user = session.query(User).filter(User.telegram_id == user_id).first()
             
             if not user:
+                logger.info(f"📭 No user found for telegram_id {user_id}")
                 return jsonify({
                     'success': True,
                     'items': []
                 })
             
             items = session.query(Item).filter(Item.user_id == user.id).all()
+            logger.info(f"📦 Retrieved {len(items)} items for user {user_id}")
             
             return jsonify({
                 'success': True,
