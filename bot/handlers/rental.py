@@ -182,22 +182,28 @@ async def view_car_options(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("rent_car_"))
 async def rent_car_start(callback: CallbackQuery, state: FSMContext):
     """Начало процесса сдачи автомобиля в аренду"""
-    car_id = int(callback.data.split("_")[2])
-    await state.update_data(rental_car_id=car_id)
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="✅ Да, уже прошла", callback_data="rental_is_past_yes"),
-            InlineKeyboardButton(text="❌ Нет, текущая", callback_data="rental_is_past_no")
-        ],
-        [InlineKeyboardButton(text="↩️ Отмена", callback_data="cancel")]
-    ])
-    
-    await callback.message.edit_text(
-        "❓ Это аренда, которая уже прошла в прошлом?",
-        reply_markup=keyboard
-    )
-    await callback.answer()
+    try:
+        car_id = int(callback.data.split("_")[2])
+        await state.update_data(rental_car_id=car_id)
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Да, уже прошла", callback_data="rental_is_past_yes"),
+                InlineKeyboardButton(text="❌ Нет, текущая", callback_data="rental_is_past_no")
+            ],
+            [InlineKeyboardButton(text="↩️ Отмена", callback_data="cancel")]
+        ])
+        
+        await callback.message.edit_text(
+            "❓ Это аренда, которая уже прошла в прошлом?",
+            reply_markup=keyboard
+        )
+        await callback.answer()
+    except Exception as e:
+        print(f"❌ Error in rent_car_start: {e}")
+        import traceback
+        traceback.print_exc()
+        await callback.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("rental_is_past_"))

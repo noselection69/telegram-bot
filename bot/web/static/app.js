@@ -1101,8 +1101,8 @@ function loadActiveRentals() {
                 <div class="item-card">
                     <h4>${rental.car_name}</h4>
                     <p>⏰ ${rental.hours}ч × ${formatPrice(rental.price_per_hour)}$ = <strong>${formatPrice(rental.total_income)}$</strong></p>
-                    <p class="small">🕐 ${new Date(rental.rental_start).toLocaleString('ru-RU')}</p>
-                    <p class="small">🕑 ${new Date(rental.rental_end).toLocaleString('ru-RU')}</p>
+                    <p class="small">🕐 ${rental.rental_start || 'Нет даты'}</p>
+                    <p class="small">🕑 ${rental.rental_end || 'Нет даты'}</p>
                 </div>
             `).join('');
         } else {

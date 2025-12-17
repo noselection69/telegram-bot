@@ -52,11 +52,11 @@ try:
     Base.metadata.create_all(bind=sync_engine)
     logger.info("✅ Database tables created/verified")
     
-    # Проверяем и добавляем новые колонки если их нет (для PostgreSQL)
-    if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
-        try:
-            with sync_engine.connect() as connection:
-                # Проверяем наличие колонки is_past в таблице rentals
+    # Проверяем и добавляем новые колонки если их нет
+    try:
+        with sync_engine.connect() as connection:
+            if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+                # PostgreSQL: используем information_schema
                 result = connection.execute(
                     text("""
                     SELECT EXISTS (
@@ -65,15 +65,26 @@ try:
                     );
                     """)
                 )
-                if not result.scalar():
-                    logger.info("🔧 Adding is_past column to rentals table...")
-                    connection.execute(
-                        text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT FALSE;")
-                    )
-                    connection.commit()
-                    logger.info("✅ is_past column added")
-        except Exception as e:
-            logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
+                has_is_past = result.scalar()
+            else:
+                # SQLite: используем PRAGMA
+                result = connection.execute(
+                    text("PRAGMA table_info(rentals)")
+                )
+                columns = [row[1] for row in result.fetchall()]
+                has_is_past = 'is_past' in columns
+            
+            if not has_is_past:
+                logger.info("🔧 Adding is_past column to rentals table...")
+                connection.execute(
+                    text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT 0;")
+                )
+                connection.commit()
+                logger.info("✅ is_past column added")
+            else:
+                logger.info("✅ is_past column already exists")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
 except Exception as e:
     logger.error(f"❌ Database error: {e}")
     import traceback
@@ -553,39 +564,48 @@ def get_rentals():
                 Rental.rental_end > now
             ).all()
             
+            logger.info(f"📊 Found {len(rentals)} active rentals for user {user_id}")
+            
             # Форматируем даты в московское время
             def format_moscow_time(dt):
                 if not dt:
                     return None
-                if dt.tzinfo is None:
-                    # Если naive datetime, предполагаем Moscow timezone
-                    tz = pytz.timezone('Europe/Moscow')
-                    dt = tz.localize(dt)
-                else:
-                    # Если aware, преобразуем в Moscow timezone
-                    tz = pytz.timezone('Europe/Moscow')
-                    dt = dt.astimezone(tz)
-                return dt.strftime('%d.%m.%Y %H:%M')
+                try:
+                    if dt.tzinfo is None:
+                        # Если naive datetime, предполагаем Moscow timezone
+                        tz = pytz.timezone('Europe/Moscow')
+                        dt = tz.localize(dt)
+                    else:
+                        # Если aware, преобразуем в Moscow timezone
+                        tz = pytz.timezone('Europe/Moscow')
+                        dt = dt.astimezone(tz)
+                    return dt.strftime('%d.%m.%Y %H:%M')
+                except Exception as e:
+                    logger.error(f"❌ Error formatting date {dt}: {e}")
+                    return str(dt)
+            
+            rentals_data = []
+            for rental in rentals:
+                rental_dict = {
+                    'id': rental.id,
+                    'car_name': rental.car.name,
+                    'price_per_hour': float(rental.price_per_hour),
+                    'hours': rental.hours,
+                    'rental_start': format_moscow_time(rental.rental_start),
+                    'rental_end': format_moscow_time(rental.rental_end),
+                    'total_income': float(rental.price_per_hour) * rental.hours
+                }
+                logger.info(f"📝 Rental {rental.id}: start={rental_dict['rental_start']}, end={rental_dict['rental_end']}")
+                rentals_data.append(rental_dict)
             
             return jsonify({
                 'success': True,
-                'rentals': [
-                    {
-                        'id': rental.id,
-                        'car_name': rental.car.name,
-                        'price_per_hour': float(rental.price_per_hour),
-                        'hours': rental.hours,
-                        'rental_start': format_moscow_time(rental.rental_start),
-                        'rental_end': format_moscow_time(rental.rental_end),
-                        'total_income': float(rental.price_per_hour) * rental.hours
-                    }
-                    for rental in rentals
-                ]
+                'rentals': rentals_data
             })
         finally:
             session.close()
     except Exception as e:
-        logger.error(f"Error getting rentals: {e}")
+        logger.error(f"Error getting rentals: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
