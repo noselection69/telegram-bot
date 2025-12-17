@@ -219,15 +219,10 @@
                 <input type="hidden" id="rentalCarId">
                 
                 <div class="form-field">
-                    <label>Это аренда из прошлого?</label>
-                    <div style="display: flex; gap: 10px; margin: 10px 0;">
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="rentalPast" value="false" checked> ❌ Нет, текущая
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="rentalPast" value="true"> ✅ Да, уже прошла
-                        </label>
-                    </div>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="rentalPastToggle" onchange="toggleRentalPast()">
+                        <span>📅 Прошлая аренда</span>
+                    </label>
                 </div>
                 
                 <div class="form-field">

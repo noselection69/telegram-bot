@@ -400,8 +400,15 @@ async function loadCars() {
 
 function showRentalModal(carId) {
     document.getElementById('rentalCarId').value = carId;
+    document.getElementById('rentalPastToggle').checked = false;  // Сбрасываем чекбокс
     document.getElementById('rentalModal').classList.remove('hidden');
     document.getElementById('rentalModal').style.display = 'flex';
+    // Сбрасываем поле end_time в нормальное состояние
+    const endTimeInput = document.getElementById('rentalEndTime');
+    endTimeInput.disabled = false;
+    endTimeInput.placeholder = '22:30 или +4';
+    endTimeInput.setAttribute('required', 'required');
+    document.getElementById('rentalEndTimeLabel').textContent = 'Время окончания (HH:MM или +N часов):';
     // Фокусируемся на первый input
     setTimeout(() => {
         document.getElementById('rentalPrice').focus();
@@ -468,18 +475,36 @@ function closeRentalModal() {
     document.querySelector('#rentalModal form').reset();
 }
 
+function toggleRentalPast() {
+    const isPast = document.getElementById('rentalPastToggle').checked;
+    const endTimeInput = document.getElementById('rentalEndTime');
+    const label = document.getElementById('rentalEndTimeLabel');
+    
+    if (isPast) {
+        endTimeInput.disabled = true;
+        endTimeInput.value = '';
+        endTimeInput.placeholder = 'Не требуется (прошлая аренда)';
+        endTimeInput.removeAttribute('required');
+        label.textContent = 'Время окончания (не требуется):';
+    } else {
+        endTimeInput.disabled = false;
+        endTimeInput.placeholder = '22:30 или +4';
+        endTimeInput.setAttribute('required', 'required');
+        label.textContent = 'Время окончания (HH:MM или +N часов):';
+    }
+}
+
 async function submitRental(event) {
     event.preventDefault();
     
-    const isPastRadio = document.querySelector('input[name="rentalPast"]:checked');
-    const is_past = isPastRadio ? isPastRadio.value === 'true' : false;
+    const isPast = document.getElementById('rentalPastToggle').checked;
     
     const data = {
         car_id: parseInt(document.getElementById('rentalCarId').value),
         price_per_hour: parseFloat(document.getElementById('rentalPrice').value),
         hours: parseInt(document.getElementById('rentalHours').value),
-        end_time: document.getElementById('rentalEndTime').value,
-        is_past: is_past  // Добавляем флаг прошедшей аренды
+        end_time: isPast ? '' : document.getElementById('rentalEndTime').value,  // Пустое для прошлых
+        is_past: isPast
     };
     
     try {

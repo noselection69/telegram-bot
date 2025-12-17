@@ -300,29 +300,24 @@ def rent_car():
             # Парсим время окончания
             now_moscow = get_moscow_now()
             is_past = data.get('is_past', False)  # Флаг прошедшей аренды
+            end_time_str = data.get('end_time', '').strip()
             
-            end_time_str = data['end_time'].strip()
-            logger.info(f"Parsing end_time: '{end_time_str}', is_past={is_past}")
+            logger.info(f"Parsing rental: is_past={is_past}, end_time='{end_time_str}'")
             
             # Преобразуем в UTC для сохранения в БД
             tz_utc = pytz.UTC
             
             try:
                 if is_past:
-                    # Для прошедшей аренды время это начало аренды
-                    if end_time_str.startswith('+'):
-                        raise ValueError("For past rentals, please use HH:MM format")
-                    
-                    # Парсим время как start_time
-                    time_parts = end_time_str.split(':') if ':' in end_time_str else end_time_str.split()
-                    hour = int(time_parts[0].strip())
-                    minute = int(time_parts[1].strip()) if len(time_parts) > 1 else 0
-                    rental_start_moscow = now_moscow.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                    
-                    # Конец аренды = начало + часы
-                    rental_end_moscow = rental_start_moscow + timedelta(hours=int(data['hours']))
+                    # Для прошедшей аренды: начало = сейчас, конец = сейчас - 1 час (уже прошла)
+                    # Или можно использовать сейчас как время окончания
+                    rental_start_moscow = now_moscow - timedelta(hours=int(data['hours']) + 1)
+                    rental_end_moscow = now_moscow
                 else:
                     # Для текущей аренды
+                    if not end_time_str:
+                        raise ValueError("end_time is required for current rentals")
+                    
                     if end_time_str.startswith('+'):
                         hours = int(end_time_str[1:].strip())
                         rental_end_moscow = now_moscow + timedelta(hours=hours)
