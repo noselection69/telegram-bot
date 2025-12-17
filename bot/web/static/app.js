@@ -316,7 +316,7 @@ async function submitSellItem(itemId, salePrice) {
         
         if (result.success) {
             showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}$`, 'success');
-            loadItems();
+            loadInventory();
         } else {
             showNotification(result.error, 'error');
         }
