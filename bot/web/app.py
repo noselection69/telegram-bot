@@ -25,22 +25,29 @@ CORS(app)
 
 # Инициализируем синхронную БД для Flask
 try:
-    from bot.config import DB_PATH, DATA_DIR
     import os
     
     logger.info(f"📊 Flask database configuration:")
     logger.info(f"   DATABASE_URL: {DATABASE_URL}")
-    logger.info(f"   SYNC_DATABASE_URL: {DATABASE_URL.replace('sqlite+aiosqlite', 'sqlite')}")
-    logger.info(f"   DB_PATH: {DB_PATH}")
-    logger.info(f"   DB exists: {DB_PATH.exists()}")
-    logger.info(f"   DATA_DIR: {DATA_DIR}")
     logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
     
-    SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
-    sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})
+    # Преобразуем для синхронного использования
+    if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+        # PostgreSQL: используем psycopg2
+        SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+        SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("postgresql+asyncpg", "postgresql")
+        logger.info(f"   Using PostgreSQL (psycopg2)")
+        connect_args = {}
+    else:
+        # SQLite: локально
+        SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+        logger.info(f"   Using SQLite")
+        connect_args = {"check_same_thread": False}
+    
+    sync_engine = create_engine(SYNC_DATABASE_URL, connect_args=connect_args)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     
-    # Создаём все таблицы (включая новую BuyPrice таблицу)
+    # Создаём все таблицы
     from bot.models.database import Base
     Base.metadata.create_all(bind=sync_engine)
     logger.info("✅ Database tables created/verified")

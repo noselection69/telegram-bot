@@ -111,18 +111,16 @@ async def set_bot_commands(bot: Bot):
 async def main():
     """Главная функция"""
     # Логируем информацию о конфигурации
-    from bot.config import DB_PATH, DATA_DIR
+    from bot.config import DATABASE_URL
     logger.info(f"🔍 Database configuration:")
-    logger.info(f"   DATA_DIR: {DATA_DIR}")
-    logger.info(f"   DB_PATH: {DB_PATH}")
-    logger.info(f"   DB exists: {DB_PATH.exists()}")
-    logger.info(f"   DB file size: {DB_PATH.stat().st_size if DB_PATH.exists() else 'N/A'} bytes")
-    logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
+    logger.info(f"   DATABASE_URL: {DATABASE_URL}")
     
-    # Список файлов в DATA_DIR
-    if DATA_DIR.exists():
-        files = list(DATA_DIR.glob('*'))
-        logger.info(f"   Files in DATA_DIR: {[f.name for f in files]}")
+    if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+        logger.info(f"   Using PostgreSQL (persistent database)")
+    else:
+        logger.info(f"   Using SQLite (local)")
+    
+    logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
     
     # Инициализируем БД
     await db.init()
