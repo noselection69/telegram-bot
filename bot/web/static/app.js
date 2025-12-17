@@ -160,6 +160,13 @@ function switchTab(tabName) {
     // Показываем нужную вкладку
     document.getElementById(tabName + '-tab').classList.add('active');
     event.target.classList.add('active');
+    
+    // Загружаем данные для вкладки
+    if (tabName === 'inventory') {
+        loadInventory();
+    } else if (tabName === 'items') {
+        loadItems();
+    }
 }
 
 // Функция для закрытия всех popup view'ов
@@ -222,7 +229,7 @@ async function submitAddItem(event) {
             showNotification(result.message, 'success');
             document.querySelector('#addItemForm form').reset();
             hideAddItemForm();
-            loadItems();
+            loadInventory();
         } else {
             showNotification(result.error, 'error');
         }
@@ -246,22 +253,28 @@ async function loadItems() {
         console.log('📦 Response data:', data);
         
         if (data.success && data.items.length > 0) {
-            document.getElementById('itemsList').innerHTML = data.items.map(item => `
-                <div class="item-card">
-                    <div class="item-header">
-                        <h4>${item.name}</h4>
-                        <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+            // Показываем только ПРОДАННЫЕ товары (история продаж)
+            const soldItems = data.items.filter(item => item.sold);
+            
+            if (soldItems.length > 0) {
+                document.getElementById('itemsList').innerHTML = soldItems.map(item => `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <h4>${item.name}</h4>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+                        </div>
+                        <span class="badge sold">✅ Продано</span>
+                        <p class="item-category">📁 ${item.category}</p>
+                        <p class="item-price">💰 ${formatPrice(item.price)}$</p>
                     </div>
-                    <span class="badge ${item.sold ? 'sold' : 'unsold'}">
-                        ${item.sold ? '✅ Продано' : '⏳ В наличии'}
-                    </span>
-                    <p class="item-category">📁 ${item.category}</p>
-                    <p class="item-price">💰 ${formatPrice(item.price)}$</p>
-                    <div class="btn-group">
-                        ${!item.sold ? `<button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})">💵 Продать</button>` : ''}
+                `).join('');
+            } else {
+                document.getElementById('itemsList').innerHTML = `
+                    <div class="empty">
+                        <p>� История продаж пуста</p>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }
         } else if (data.success) {
             // Товары не добавлены или ошибка загрузки
             document.getElementById('itemsList').innerHTML = `
