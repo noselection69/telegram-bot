@@ -997,34 +997,74 @@ function loadCarsForView() {
 
 function loadRentalStats() {
     const statsContent = document.getElementById('rentalStatsContent');
+    const timeFilter = document.getElementById('rentalTimeFilter')?.value || 'all';
+    
     statsContent.innerHTML = '<p class="loading">Загрузка статистики...</p>';
     
-    fetch('/api/get-rental-stats', {
+    fetch(`/api/get-rental-stats?time_filter=${timeFilter}`, {
         headers: {'X-User-ID': userId}
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
+            let carsTableHtml = '';
+            
+            if (data.cars_stats && data.cars_stats.length > 0) {
+                carsTableHtml = `
+                    <div class="stats-section">
+                        <h4>📊 Статистика по автомобилям:</h4>
+                        <div class="cars-stats-table">
+                            ${data.cars_stats.map(car => `
+                                <div class="car-stat-item">
+                                    <div class="car-stat-header">
+                                        <span class="car-name">🚗 ${car.car_name}</span>
+                                        <span class="car-income">${formatPrice(car.total_income)}$</span>
+                                    </div>
+                                    <div class="car-stat-details">
+                                        <span class="detail">Аренд: ${car.rentals_count}</span>
+                                        <span class="detail">Часов: ${car.total_hours}</span>
+                                        <span class="detail">Среднее: ${formatPrice(car.total_income / car.rentals_count)}$/аренду</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
             const content = `
                 <div class="stats-container">
-                    <div class="stat-item">
-                        <span class="stat-label">Всего авто:</span>
-                        <span class="stat-value">${data.total_cars}</span>
+                    <div class="time-filter-group">
+                        <label for="rentalTimeFilter">Период:</label>
+                        <select id="rentalTimeFilter" onchange="loadRentalStats()">
+                            <option value="day" ${timeFilter === 'day' ? 'selected' : ''}>За день</option>
+                            <option value="week" ${timeFilter === 'week' ? 'selected' : ''}>За неделю</option>
+                            <option value="all" ${timeFilter === 'all' ? 'selected' : ''}>Всё время</option>
+                        </select>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Всего аренд:</span>
-                        <span class="stat-value">${data.total_rentals}</span>
+                    
+                    <div class="stats-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Всего авто:</span>
+                            <span class="stat-value">${data.total_cars}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Аренд за период:</span>
+                            <span class="stat-value">${data.total_rentals}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Доход за период:</span>
+                            <span class="stat-value">${formatPrice(data.total_income)}$</span>
+                        </div>
+                        ${data.total_rentals > 0 ? `
+                        <div class="stat-item">
+                            <span class="stat-label">Среднее за аренду:</span>
+                            <span class="stat-value">${formatPrice(data.total_income / data.total_rentals)}$</span>
+                        </div>
+                        ` : ''}
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Общий доход:</span>
-                        <span class="stat-value">${formatPrice(data.total_income)}$</span>
-                    </div>
-                    ${data.total_rentals > 0 ? `
-                    <div class="stat-item">
-                        <span class="stat-label">Средний доход на аренду:</span>
-                        <span class="stat-value">${formatPrice(data.total_income / data.total_rentals)}$</span>
-                    </div>
-                    ` : ''}
+                    
+                    ${carsTableHtml}
                 </div>
             `;
             statsContent.innerHTML = content;

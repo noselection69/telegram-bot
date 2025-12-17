@@ -541,9 +541,10 @@ def get_rentals():
 
 @app.route('/api/get-rental-stats', methods=['GET'])
 def get_rental_stats():
-    """Получить статистику по арендам"""
+    """Получить статистику по арендам с фильтрами по времени"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
+        time_filter = request.args.get('time_filter', 'all')  # day, week, all
         
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
@@ -557,22 +558,65 @@ def get_rental_stats():
                     'success': True,
                     'total_cars': 0,
                     'total_rentals': 0,
-                    'total_income': 0
+                    'total_income': 0,
+                    'cars_stats': []
                 })
+            
+            # Получаем все аренды пользователя
+            all_rentals = session.query(Rental).filter(Rental.user_id == user.id).all()
+            
+            # Фильтруем по времени
+            now = get_moscow_now()
+            if time_filter == 'day':
+                today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                tomorrow = today + timedelta(days=1)
+                filtered_rentals = [r for r in all_rentals if r.rental_start and 
+                                   today.replace(tzinfo=None) <= r.rental_start.replace(tzinfo=None) < tomorrow.replace(tzinfo=None)]
+            elif time_filter == 'week':
+                week_ago = now - timedelta(days=7)
+                filtered_rentals = [r for r in all_rentals if r.rental_start and 
+                                   r.rental_start.replace(tzinfo=None) >= week_ago.replace(tzinfo=None)]
+            else:  # all
+                filtered_rentals = all_rentals
+            
+            # Общая статистика
+            total_rentals = len(filtered_rentals)
+            total_income = sum(float(r.price_per_hour) * r.hours for r in filtered_rentals)
+            
+            # Статистика по каждому автомобилю
+            cars_stats = {}
+            for rental in filtered_rentals:
+                car = rental.car
+                if not car:
+                    continue
+                    
+                car_key = f"{car.id}_{car.name}"
+                if car_key not in cars_stats:
+                    cars_stats[car_key] = {
+                        'car_id': car.id,
+                        'car_name': car.name,
+                        'rentals_count': 0,
+                        'total_hours': 0,
+                        'total_income': 0
+                    }
+                
+                cars_stats[car_key]['rentals_count'] += 1
+                cars_stats[car_key]['total_hours'] += rental.hours
+                cars_stats[car_key]['total_income'] += float(rental.price_per_hour) * rental.hours
+            
+            # Сортируем по доходу (по убыванию)
+            cars_list = sorted(cars_stats.values(), key=lambda x: x['total_income'], reverse=True)
             
             # Количество машин
             cars_count = session.query(Car).filter(Car.user_id == user.id).count()
-            
-            # Все аренды
-            rentals = session.query(Rental).filter(Rental.user_id == user.id).all()
-            total_rentals = len(rentals)
-            total_income = sum(float(r.price_per_hour) * r.hours for r in rentals)
             
             return jsonify({
                 'success': True,
                 'total_cars': cars_count,
                 'total_rentals': total_rentals,
-                'total_income': total_income
+                'total_income': total_income,
+                'time_filter': time_filter,
+                'cars_stats': cars_list
             })
         finally:
             session.close()
