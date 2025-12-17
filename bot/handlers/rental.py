@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from sqlalchemy import select
@@ -185,7 +185,6 @@ async def rent_car_start(callback: CallbackQuery, state: FSMContext):
     car_id = int(callback.data.split("_")[2])
     await state.update_data(rental_car_id=car_id)
     
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✅ Да, уже прошла", callback_data="rental_is_past_yes"),
