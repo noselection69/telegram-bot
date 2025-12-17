@@ -18,6 +18,8 @@ if os.getenv("RAILWAY_ENVIRONMENT"):
     try:
         DATA_DIR.mkdir(exist_ok=True, parents=True)
         print(f"✅ Using Railway Volume for data: {DATA_DIR}")
+        print(f"   RAILWAY_ENVIRONMENT={os.getenv('RAILWAY_ENVIRONMENT')}")
+        print(f"   RAILWAY_VOLUME_MOUNT_PATH={os.getenv('RAILWAY_VOLUME_MOUNT_PATH', 'NOT SET')}")
     except Exception as e:
         print(f"⚠️ Warning: Could not create data directory: {e}")
         # Fallback to project root if volume fails

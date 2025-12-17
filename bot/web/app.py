@@ -25,9 +25,16 @@ CORS(app)
 
 # Инициализируем синхронную БД для Flask
 try:
+    from bot.config import DB_PATH, DATA_DIR
+    import os
+    
     logger.info(f"📊 Flask database configuration:")
     logger.info(f"   DATABASE_URL: {DATABASE_URL}")
     logger.info(f"   SYNC_DATABASE_URL: {DATABASE_URL.replace('sqlite+aiosqlite', 'sqlite')}")
+    logger.info(f"   DB_PATH: {DB_PATH}")
+    logger.info(f"   DB exists: {DB_PATH.exists()}")
+    logger.info(f"   DATA_DIR: {DATA_DIR}")
+    logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
     
     SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args={"check_same_thread": False})

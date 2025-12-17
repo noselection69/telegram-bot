@@ -116,7 +116,13 @@ async def main():
     logger.info(f"   DATA_DIR: {DATA_DIR}")
     logger.info(f"   DB_PATH: {DB_PATH}")
     logger.info(f"   DB exists: {DB_PATH.exists()}")
+    logger.info(f"   DB file size: {DB_PATH.stat().st_size if DB_PATH.exists() else 'N/A'} bytes")
     logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
+    
+    # Список файлов в DATA_DIR
+    if DATA_DIR.exists():
+        files = list(DATA_DIR.glob('*'))
+        logger.info(f"   Files in DATA_DIR: {[f.name for f in files]}")
     
     # Инициализируем БД
     await db.init()
