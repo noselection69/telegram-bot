@@ -724,6 +724,40 @@ def delete_buy_price(price_id):
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/api/debug-db', methods=['GET'])
+def debug_db():
+    """Диагностика БД - проверяем где хранится БД и есть ли данные"""
+    from bot.config import DB_PATH, DATA_DIR
+    import os
+    
+    try:
+        db_exists = os.path.exists(DB_PATH)
+        db_size = os.path.getsize(DB_PATH) if db_exists else 0
+        
+        session = SessionLocal()
+        try:
+            items_count = session.query(Item).count()
+            users_count = session.query(User).count()
+            sales_count = session.query(Sale).count()
+        finally:
+            session.close()
+        
+        return jsonify({
+            'success': True,
+            'db_path': str(DB_PATH),
+            'data_dir': str(DATA_DIR),
+            'db_exists': db_exists,
+            'db_size_bytes': db_size,
+            'items_count': items_count,
+            'users_count': users_count,
+            'sales_count': sales_count,
+            'railway_environment': os.getenv("RAILWAY_ENVIRONMENT", "NOT_SET")
+        })
+    except Exception as e:
+        logger.error(f"Error in debug_db: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 def run_web_server(port=5000, cert_file=None, key_file=None):
     """Запустить веб-сервер с HTTPS"""
     ssl_context = None
