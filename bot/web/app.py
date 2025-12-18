@@ -1366,7 +1366,13 @@ def admin_reset_bp_tasks():
         logger.info("🔄 Admin requested BP tasks reset...")
         session = SessionLocal()
         try:
-            # Удаляем все старые задания
+            # Сначала удаляем все записи о выполнении (bp_completions)
+            # Это нужно чтобы не было Foreign Key constraint violation
+            deleted_completions = session.query(BPCompletion).delete()
+            session.commit()
+            logger.info(f"Deleted {deleted_completions} completion records")
+            
+            # Теперь удаляем все старые задания
             deleted = session.query(BPTask).delete()
             session.commit()
             logger.info(f"Deleted {deleted} old BP tasks")
