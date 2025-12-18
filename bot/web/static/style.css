@@ -113,6 +113,10 @@ header h1 {
     margin: 0 !important;
 }
 
+#bp-farm-tab h2 {
+    margin-bottom: 0 !important;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
