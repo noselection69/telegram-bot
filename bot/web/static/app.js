@@ -800,11 +800,11 @@ async function loadBuyPrices() {
                 <div class="item-card">
                     <div class="item-header">
                         <h4>${price.item_name}</h4>
-                        <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить">✕</button>
+                        <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
                     </div>
-                    <p class="item-price">💰 ${price.price_text || formatPrice(price.price)}$</p>
-                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;">� ${price.seller_name}</p>
-                    <p class="small" style="color: var(--text-secondary); margin-top: 2px;">�📅 ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
+                    <p class="item-price"><i class="fas fa-coins"></i> ${price.price_text || formatPrice(price.price)}$</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;"><i class="fas fa-user"></i> ${price.seller_name}</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 2px;"><i class="fas fa-calendar"></i> ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
                 </div>
             `).join('');
         } else {
@@ -1008,12 +1008,12 @@ function loadHistory() {
             historyList.innerHTML = data.sales.map(sale => `
                 <div class="item-card">
                     <h4>${sale.item_name}</h4>
-                    <p>💵 Продано за: <strong>${formatPrice(sale.sale_price)}$</strong></p>
-                    <p>💰 Куплено за: ${formatPrice(sale.purchase_price)}$</p>
+                    <p><i class="fas fa-receipt"></i> Продано за: <strong>${formatPrice(sale.sale_price)}$</strong></p>
+                    <p><i class="fas fa-coins"></i> Куплено за: ${formatPrice(sale.purchase_price)}$</p>
                     <p class="profit ${sale.profit >= 0 ? 'positive' : 'negative'}">
-                        📈 Прибыль: ${sale.profit >= 0 ? '+' : ''}${formatPrice(sale.profit)}$
+                        <i class="fas fa-chart-line"></i> Прибыль: ${sale.profit >= 0 ? '+' : ''}${formatPrice(sale.profit)}$
                     </p>
-                    <p class="small">📅 ${new Date(sale.created_at).toLocaleString('ru-RU')}</p>
+                    <p class="small"><i class="fas fa-calendar"></i> ${new Date(sale.created_at).toLocaleString('ru-RU')}</p>
                 </div>
             `).join('');
         } else {
@@ -1082,14 +1082,14 @@ function loadCarsForView() {
                     <div class="item-card">
                         <div class="item-header">
                             <h4>${car.name}</h4>
-                            <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить">✕</button>
+                            <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
                         </div>
-                        <p class="item-price">💰 Стоимость: ${formatPrice(car.cost)}$</p>
-                        <p class="item-price">📊 Доход: ${formatPrice(car.total_income)}$</p>
+                        <p class="item-price"><i class="fas fa-coins"></i> Стоимость: ${formatPrice(car.cost)}$</p>
+                        <p class="item-price"><i class="fas fa-chart-pie"></i> Доход: ${formatPrice(car.total_income)}$</p>
                         <div class="payback-bar">
                             <div class="payback-fill" style="width: ${Math.min(100, car.payback_percent)}%; background-color: ${paybackColor};"></div>
                         </div>
-                        <p class="payback-text">🎯 Окупилось: ${car.payback_percent}% (${car.rentals_count} аренд)</p>
+                        <p class="payback-text"><i class="fas fa-target"></i> Окупилось: ${car.payback_percent}% (${car.rentals_count} аренд)</p>
                     </div>
                 `;
             }).join('');
@@ -1238,7 +1238,7 @@ function loadBPTasks() {
                     html += `
                         <div class="bp-category">
                             <h3 onclick="toggleCategory('${category}')" style="cursor: pointer;">
-                                <span class="arrow collapsed">▼</span> ${category} (${data.tasks[category].length})
+                                <span class="arrow collapsed">▶</span> ${category} (${data.tasks[category].length})
                             </h3>
                             <div class="bp-tasks collapsed" id="category-${category}">
                     `;

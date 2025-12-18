@@ -4,6 +4,14 @@
     box-sizing: border-box;
 }
 
+/* Font Awesome иконки */
+i {
+    margin-right: 6px;
+    min-width: 1em;
+    display: inline-block;
+    text-align: center;
+}
+
 /* Цветовые переменные для тем */
 :root {
     --bg-primary: #1e1e1e;
