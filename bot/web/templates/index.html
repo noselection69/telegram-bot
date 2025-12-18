@@ -23,6 +23,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="resell">📊 Перекупа</button>
             <button class="tab-btn" data-tab="rental">🚗 Аренда</button>
+            <button class="tab-btn" data-tab="bp-farm">⭐ Фарм BP</button>
         </nav>
 
         <!-- Калькулятор перекупа -->
@@ -284,6 +285,40 @@
             </form>
         </div>
     </div>
+
+    <!-- Вкладка Фарм BP -->
+    <section id="bp-farm-tab" class="tab-content">
+        <div class="section">
+            <h2>⭐ Фарм BP</h2>
+            
+            <!-- Статистика -->
+            <div class="stat-group">
+                <div class="stat-item">
+                    <span class="stat-label">🌅 Сегодня:</span>
+                    <span class="stat-value" id="bpToday">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">📅 За неделю:</span>
+                    <span class="stat-value" id="bpWeek">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🎯 Всего:</span>
+                    <span class="stat-value" id="bpTotal">0</span>
+                </div>
+            </div>
+            
+            <!-- Переключатель VIP -->
+            <div class="form-field">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="platinumVipToggle" onchange="togglePlatinumVip()">
+                    <span>💎 Платинум VIP</span>
+                </label>
+            </div>
+            
+            <!-- Задания по категориям -->
+            <div id="bpTasksContainer"></div>
+        </div>
+    </section>
 
     <!-- Уведомление -->
     <div id="notification" class="notification hidden"></div>

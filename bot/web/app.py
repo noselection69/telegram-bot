@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum
+from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum, BPTask, BPCompletion
 from bot.utils.datetime_helper import get_moscow_now
 from bot.config import DATABASE_URL
 from datetime import datetime, timedelta
@@ -85,12 +85,42 @@ try:
                 logger.info("✅ is_past column already exists")
     except Exception as e:
         logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
+    
+    # Инициализируем BP задания
+    try:
+        session = SessionLocal()
+        existing = session.query(BPTask).count()
+        if existing == 0:
+            logger.info("🔧 Initializing BP tasks...")
+            bp_tasks_data = [
+                # Легкие
+                {"name": "Сделать скриншот", "category": "Легкие", "bp_without_vip": 10, "bp_with_vip": 20},
+                {"name": "Посетить магазин", "category": "Легкие", "bp_without_vip": 15, "bp_with_vip": 30},
+                {"name": "Написать отзыв", "category": "Легкие", "bp_without_vip": 20, "bp_with_vip": 40},
+                # Средние
+                {"name": "Купить товар", "category": "Средние", "bp_without_vip": 30, "bp_with_vip": 60},
+                {"name": "Пригласить друга", "category": "Средние", "bp_without_vip": 40, "bp_with_vip": 80},
+                {"name": "Пройти опрос", "category": "Средние", "bp_without_vip": 35, "bp_with_vip": 70},
+                # Тяжелые
+                {"name": "Заказать премиум", "category": "Тяжелые", "bp_without_vip": 100, "bp_with_vip": 200},
+                {"name": "Привести 3 друзей", "category": "Тяжелые", "bp_without_vip": 150, "bp_with_vip": 300},
+                {"name": "Потратить 1000$", "category": "Тяжелые", "bp_without_vip": 200, "bp_with_vip": 400},
+            ]
+            for task_data in bp_tasks_data:
+                task = BPTask(**task_data)
+                session.add(task)
+            session.commit()
+            logger.info(f"✅ BP tasks initialized ({len(bp_tasks_data)} tasks)")
+        else:
+            logger.info(f"✅ BP tasks already exist ({existing} tasks)")
+        session.close()
+    except Exception as e:
+        logger.warning(f"⚠️ Could not initialize BP tasks: {e}")
 except Exception as e:
     logger.error(f"❌ Database error: {e}")
     import traceback
     logger.error(traceback.format_exc())
     SessionLocal = None
-
 
 
 @app.before_request
@@ -963,6 +993,243 @@ def debug_db():
         return jsonify(db_info)
     except Exception as e:
         logger.error(f"Error in debug_db: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# === BP ENDPOINTS ===
+
+@app.route('/api/get-bp-tasks', methods=['GET'])
+def get_bp_tasks():
+    """Получить все BP задания с информацией о выполнении"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            
+            if not user:
+                user = User(telegram_id=user_id)
+                session.add(user)
+                session.flush()
+            
+            # Получаем сегодняшнюю дату (в Москве)
+            now_moscow = get_moscow_now()
+            today_start = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = now_moscow.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            # Получаем все задания, сгруппированные по категориям
+            all_tasks = session.query(BPTask).all()
+            
+            tasks_by_category = {}
+            for task in all_tasks:
+                # Проверяем выполнено ли задание сегодня
+                completion = session.query(BPCompletion).filter(
+                    BPCompletion.user_id == user.id,
+                    BPCompletion.task_id == task.id,
+                    BPCompletion.completed_date >= today_start,
+                    BPCompletion.completed_date <= today_end,
+                    BPCompletion.is_completed == True
+                ).first()
+                
+                if task.category not in tasks_by_category:
+                    tasks_by_category[task.category] = []
+                
+                tasks_by_category[task.category].append({
+                    'id': task.id,
+                    'name': task.name,
+                    'bp_without_vip': task.bp_without_vip,
+                    'bp_with_vip': task.bp_with_vip,
+                    'is_completed': completion is not None
+                })
+            
+            return jsonify({
+                'success': True,
+                'tasks': tasks_by_category,
+                'has_platinum_vip': user.has_platinum_vip
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error getting BP tasks: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/toggle-bp-task/<int:task_id>', methods=['POST'])
+def toggle_bp_task(task_id):
+    """Отметить/убрать галочку с BP задания"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        data = request.json or {}
+        is_completed = data.get('is_completed', False)
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user:
+                user = User(telegram_id=user_id)
+                session.add(user)
+                session.flush()
+            
+            task = session.query(BPTask).filter(BPTask.id == task_id).first()
+            if not task:
+                return jsonify({'success': False, 'error': 'Task not found'}), 404
+            
+            # Получаем сегодняшнюю дату (в Москве)
+            now_moscow = get_moscow_now()
+            today_start = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Ищем существующее выполнение
+            completion = session.query(BPCompletion).filter(
+                BPCompletion.user_id == user.id,
+                BPCompletion.task_id == task_id,
+                BPCompletion.completed_date >= today_start
+            ).first()
+            
+            if is_completed:
+                # Отмечаем как выполненное
+                if not completion:
+                    bp_earned = task.bp_with_vip if user.has_platinum_vip else task.bp_without_vip
+                    completion = BPCompletion(
+                        user_id=user.id,
+                        task_id=task_id,
+                        completed_date=today_start,
+                        is_completed=True,
+                        bp_earned=bp_earned
+                    )
+                    session.add(completion)
+                    logger.info(f"BP task {task_id} marked as completed for user {user_id} (+{bp_earned} BP)")
+                else:
+                    completion.is_completed = True
+            else:
+                # Убираем галочку
+                if completion:
+                    completion.is_completed = False
+                    logger.info(f"BP task {task_id} marked as uncompleted for user {user_id}")
+            
+            session.commit()
+            
+            # Считаем сегодняшний BP
+            today_bp = session.query(BPCompletion).filter(
+                BPCompletion.user_id == user.id,
+                BPCompletion.completed_date >= today_start,
+                BPCompletion.is_completed == True
+            ).all()
+            
+            total_bp_today = sum(c.bp_earned for c in today_bp)
+            
+            return jsonify({
+                'success': True,
+                'bp_earned': completion.bp_earned if is_completed and completion else 0,
+                'total_bp_today': total_bp_today
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error toggling BP task: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/get-bp-stats', methods=['GET'])
+def get_bp_stats():
+    """Получить статистику BP (за день, неделю, всё время)"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            
+            if not user:
+                return jsonify({
+                    'success': True,
+                    'bp_today': 0,
+                    'bp_week': 0,
+                    'bp_total': 0
+                })
+            
+            now_moscow = get_moscow_now()
+            
+            # За сегодня (с 07:00)
+            today_07 = now_moscow.replace(hour=7, minute=0, second=0, microsecond=0)
+            if now_moscow.hour < 7:
+                today_07 -= timedelta(days=1)
+            
+            # За неделю
+            week_start = now_moscow - timedelta(days=7)
+            
+            bp_today = session.query(BPCompletion).filter(
+                BPCompletion.user_id == user.id,
+                BPCompletion.completed_at >= today_07,
+                BPCompletion.is_completed == True
+            ).all()
+            
+            bp_week = session.query(BPCompletion).filter(
+                BPCompletion.user_id == user.id,
+                BPCompletion.completed_at >= week_start,
+                BPCompletion.is_completed == True
+            ).all()
+            
+            bp_total = session.query(BPCompletion).filter(
+                BPCompletion.user_id == user.id,
+                BPCompletion.is_completed == True
+            ).all()
+            
+            return jsonify({
+                'success': True,
+                'bp_today': sum(c.bp_earned for c in bp_today),
+                'bp_week': sum(c.bp_earned for c in bp_week),
+                'bp_total': sum(c.bp_earned for c in bp_total)
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error getting BP stats: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/toggle-platinum-vip', methods=['POST'])
+def toggle_platinum_vip():
+    """Включить/выключить платинум VIP"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        data = request.json or {}
+        has_vip = data.get('has_platinum_vip', False)
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user:
+                user = User(telegram_id=user_id, has_platinum_vip=has_vip)
+                session.add(user)
+            else:
+                user.has_platinum_vip = has_vip
+            
+            session.commit()
+            logger.info(f"User {user_id} platinum VIP set to {has_vip}")
+            
+            return jsonify({
+                'success': True,
+                'has_platinum_vip': user.has_platinum_vip
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error toggling platinum VIP: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 400
 
 

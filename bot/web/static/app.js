@@ -166,6 +166,9 @@ function switchTab(tabName) {
         loadInventory();
     } else if (tabName === 'items') {
         loadItems();
+    } else if (tabName === 'bp-farm') {
+        loadBPTasks();
+        loadBPStats();
     }
 }
 
@@ -1211,3 +1214,128 @@ function loadActiveRentals() {
         activeList.innerHTML = '<p class="error">Ошибка загрузки</p>';
     });
 }
+
+// === BP FARM FUNCTIONS ===
+
+function loadBPTasks() {
+    const container = document.getElementById('bpTasksContainer');
+    container.innerHTML = '<p class="loading">Загрузка...</p>';
+    
+    fetch('/api/get-bp-tasks', {
+        headers: {'X-User-ID': userId}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем чекбокс VIP
+            document.getElementById('platinumVipToggle').checked = data.has_platinum_vip;
+            
+            const categories = ['Легкие', 'Средние', 'Тяжелые'];
+            let html = '';
+            
+            categories.forEach(category => {
+                if (data.tasks[category]) {
+                    html += `
+                        <div class="bp-category">
+                            <h3 onclick="toggleCategory('${category}')" style="cursor: pointer;">
+                                ▼ ${category} (${data.tasks[category].length})
+                            </h3>
+                            <div class="bp-tasks" id="category-${category}">
+                    `;
+                    
+                    data.tasks[category].forEach(task => {
+                        const bpValue = data.has_platinum_vip ? task.bp_with_vip : task.bp_without_vip;
+                        const checked = task.is_completed ? 'checked' : '';
+                        
+                        html += `
+                            <div class="bp-task-item">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1;">
+                                    <input type="checkbox" ${checked} onchange="toggleBPTask(${task.id}, this.checked)">
+                                    <span>${task.name}</span>
+                                </label>
+                                <div class="bp-value">
+                                    ${task.bp_without_vip}/${task.bp_with_vip} BP
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="error">Ошибка загрузки</p>';
+        }
+    })
+    .catch(err => {
+        container.innerHTML = '<p class="error">Ошибка загрузки</p>';
+    });
+}
+
+function toggleCategory(category) {
+    const elem = document.getElementById(`category-${category}`);
+    if (elem) {
+        elem.style.display = elem.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function toggleBPTask(taskId, isCompleted) {
+    fetch(`/api/toggle-bp-task/${taskId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userId
+        },
+        body: JSON.stringify({ is_completed: isCompleted })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            loadBPStats();
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function loadBPStats() {
+    fetch('/api/get-bp-stats', {
+        headers: {'X-User-ID': userId}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('bpToday').textContent = data.bp_today;
+            document.getElementById('bpWeek').textContent = data.bp_week;
+            document.getElementById('bpTotal').textContent = data.bp_total;
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function togglePlatinumVip() {
+    const hasVip = document.getElementById('platinumVipToggle').checked;
+    
+    fetch('/api/toggle-platinum-vip', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userId
+        },
+        body: JSON.stringify({ has_platinum_vip: hasVip })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(hasVip ? '💎 Платинум VIP включен' : '💎 Платинум VIP выключен', 'success');
+            loadBPTasks();
+            loadBPStats();
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+

@@ -730,3 +730,67 @@ header h1 {
         gap: 5px;
     }
 }
+
+/* BP FARM STYLES */
+
+.bp-category {
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.bp-category h3 {
+    background: var(--bg-tertiary);
+    padding: 12px 15px;
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bp-tasks {
+    padding: 10px 0;
+    display: block;
+}
+
+.bp-task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+}
+
+.bp-task-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.bp-task-item:last-child {
+    border-bottom: none;
+}
+
+.bp-task-item label {
+    flex: 1;
+}
+
+.bp-task-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.bp-value {
+    background: var(--accent-color);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
