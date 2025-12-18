@@ -818,6 +818,19 @@ header h1 {
     display: block;
 }
 
+.bp-tasks.collapsed {
+    display: none;
+}
+
+.bp-category h3 .arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.bp-category h3 .arrow.collapsed {
+    transform: rotate(-90deg);
+}
+
 .bp-task-item {
     display: flex;
     align-items: center;

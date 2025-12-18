@@ -1238,9 +1238,9 @@ function loadBPTasks() {
                     html += `
                         <div class="bp-category">
                             <h3 onclick="toggleCategory('${category}')" style="cursor: pointer;">
-                                ▼ ${category} (${data.tasks[category].length})
+                                <span class="arrow collapsed">▼</span> ${category} (${data.tasks[category].length})
                             </h3>
-                            <div class="bp-tasks" id="category-${category}">
+                            <div class="bp-tasks collapsed" id="category-${category}">
                     `;
                     
                     data.tasks[category].forEach(task => {
@@ -1279,8 +1279,13 @@ function loadBPTasks() {
 
 function toggleCategory(category) {
     const elem = document.getElementById(`category-${category}`);
+    const arrow = elem?.parentElement?.querySelector('.arrow');
+    
     if (elem) {
-        elem.style.display = elem.style.display === 'none' ? 'block' : 'none';
+        elem.classList.toggle('collapsed');
+        if (arrow) {
+            arrow.classList.toggle('collapsed');
+        }
     }
 }
 
