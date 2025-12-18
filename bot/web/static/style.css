@@ -109,6 +109,8 @@ header h1 {
 }
 
 #bp-farm-tab {
+    flex: none !important;
+    height: auto !important;
     padding: 0 !important;
     margin: 0 !important;
 }
