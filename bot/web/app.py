@@ -712,6 +712,53 @@ def get_rental_stats():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/api/edit-rental/<int:rental_id>', methods=['PUT'])
+def edit_rental(rental_id):
+    """Редактировать аренду (цена и часы)"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        data = request.json
+        
+        session = SessionLocal()
+        try:
+            rental = session.query(Rental).filter(Rental.id == rental_id).first()
+            
+            if not rental:
+                return jsonify({'success': False, 'error': 'Rental not found'}), 404
+            
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user or rental.user_id != user.id:
+                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            
+            # Обновляем цену и часы
+            old_price = rental.price_per_hour
+            old_hours = rental.hours
+            old_income = old_price * old_hours
+            
+            rental.price_per_hour = float(data['price_per_hour'])
+            rental.hours = int(data['hours'])
+            
+            new_income = rental.price_per_hour * rental.hours
+            
+            session.commit()
+            
+            logger.info(f"Rental {rental_id} updated: {old_price}×{old_hours}=${old_income} → {rental.price_per_hour}×{rental.hours}=${new_income}")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Аренда обновлена! Старый доход: {old_income}$, новый доход: {new_income}$'
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error editing rental: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 @app.route('/api/delete-car/<int:car_id>', methods=['DELETE'])
 def delete_car(car_id):
     """Удалить автомобиль"""

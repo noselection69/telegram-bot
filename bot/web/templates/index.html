@@ -248,6 +248,43 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования аренды -->
+    <div id="editRentalModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>✏️ Редактировать аренду</h3>
+            <form onsubmit="submitEditRental(event)">
+                <input type="hidden" id="editRentalId">
+                
+                <div class="form-field">
+                    <label>Автомобиль:</label>
+                    <input type="text" id="editRentalCar" disabled style="background-color: #f0f0f0;">
+                </div>
+                
+                <div class="form-field">
+                    <label>Цена за час ($):</label>
+                    <input type="number" id="editRentalPrice" placeholder="500" step="0.01" required oninput="updateEditRentalSum()">
+                </div>
+
+                <div class="form-field">
+                    <label>Количество часов:</label>
+                    <input type="number" id="editRentalHours" placeholder="4" min="1" required oninput="updateEditRentalSum()">
+                </div>
+                
+                <div class="form-field">
+                    <label>Новая сумма:</label>
+                    <div style="font-size: 18px; font-weight: bold; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
+                        <span id="editRentalNewSum">0</span>$
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">✅ Сохранить</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditRentalModal()">❌ Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Уведомление -->
     <div id="notification" class="notification hidden"></div>
 

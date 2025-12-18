@@ -475,6 +475,70 @@ function closeRentalModal() {
     document.querySelector('#rentalModal form').reset();
 }
 
+function editRental(rentalId, price, hours, carName) {
+    document.getElementById('editRentalId').value = rentalId;
+    document.getElementById('editRentalCar').value = carName;
+    document.getElementById('editRentalPrice').value = price;
+    document.getElementById('editRentalHours').value = hours;
+    updateEditRentalSum();
+    
+    document.getElementById('editRentalModal').classList.remove('hidden');
+    document.getElementById('editRentalModal').style.display = 'flex';
+    
+    setTimeout(() => {
+        document.getElementById('editRentalPrice').focus();
+    }, 100);
+}
+
+function closeEditRentalModal() {
+    const modal = document.getElementById('editRentalModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+}
+
+function updateEditRentalSum() {
+    const price = parseFloat(document.getElementById('editRentalPrice').value) || 0;
+    const hours = parseInt(document.getElementById('editRentalHours').value) || 0;
+    const sum = price * hours;
+    document.getElementById('editRentalNewSum').textContent = formatPrice(sum);
+}
+
+async function submitEditRental(event) {
+    event.preventDefault();
+    
+    const rentalId = document.getElementById('editRentalId').value;
+    const price = parseFloat(document.getElementById('editRentalPrice').value);
+    const hours = parseInt(document.getElementById('editRentalHours').value);
+    
+    try {
+        const response = await fetch(`/api/edit-rental/${rentalId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-ID': userId
+            },
+            body: JSON.stringify({
+                price_per_hour: price,
+                hours: hours
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Аренда обновлена!', 'success');
+            closeEditRentalModal();
+            loadActiveRentals();
+            loadCarsForView();
+            loadRentalStats();
+        } else {
+            showNotification(result.error, 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка: ' + error.message, 'error');
+    }
+}
+
 function toggleRentalPast() {
     const isPast = document.getElementById('rentalPastToggle').checked;
     const endTimeInput = document.getElementById('rentalEndTime');
@@ -1130,7 +1194,10 @@ function loadActiveRentals() {
         if (data.success && data.rentals.length > 0) {
             activeList.innerHTML = data.rentals.map(rental => `
                 <div class="item-card">
-                    <h4>${rental.car_name}</h4>
+                    <div class="item-header">
+                        <h4>${rental.car_name}</h4>
+                        <button class="delete-btn" onclick="editRental(${rental.id}, ${rental.price_per_hour}, ${rental.hours}, '${rental.car_name}')" title="Редактировать">✎</button>
+                    </div>
                     <p>⏰ ${rental.hours}ч × ${formatPrice(rental.price_per_hour)}$ = <strong>${formatPrice(rental.total_income)}$</strong></p>
                     <p class="small">🕐 ${rental.rental_start || 'Нет даты'}</p>
                     <p class="small">🕑 ${rental.rental_end || 'Нет даты'}</p>
