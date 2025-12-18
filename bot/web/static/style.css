@@ -108,6 +108,10 @@ header h1 {
     display: block;
 }
 
+#bp-farm-tab {
+    padding-top: 0;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
