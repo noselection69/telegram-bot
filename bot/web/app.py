@@ -1321,9 +1321,17 @@ def run_web_server(port=5000, cert_file=None, key_file=None):
 
 
 # Финальная проверка при импорте
-logger.info(f"✅ Flask app is ready! Routes: {len(app.url_map._rules)} routes registered")
-logger.info(f"   Routes: {[str(rule) for rule in app.url_map.iter_rules()][:5]}...")
-print("✅ bot.web.app module loaded successfully!", file=sys.stderr)
-sys.stderr.flush()
+try:
+    logger.info(f"✅ Flask app is ready!")
+    logger.info(f"   Total routes registered: {len(app.url_map._rules)}")
+    routes = [str(rule) for rule in app.url_map.iter_rules()]
+    logger.info(f"   Sample routes: {routes[:5]}")
+    print("✅ bot.web.app module loaded successfully!", file=sys.stderr)
+    sys.stderr.flush()
+except Exception as e:
+    logger.error(f"❌ Flask app initialization error: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    raise
 
 

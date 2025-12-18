@@ -14,7 +14,6 @@ from bot.config import BOT_TOKEN
 from bot.models.init_db import db
 from bot.handlers import navigation, resell, statistics, rental
 from bot.tasks.notifications import check_rental_notifications
-from bot.web.app import run_web_server
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -117,6 +116,17 @@ async def main():
     
     if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
         logger.info(f"   Using PostgreSQL (persistent database)")
+        # Запускаем миграции для PostgreSQL
+        logger.info("🔧 Running PostgreSQL migrations...")
+        try:
+            from migrate_postgresql import migrate_postgresql
+            success = migrate_postgresql()
+            if not success:
+                logger.warning("⚠️ Migrations completed with warnings, but continuing...")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not run migrations: {e}")
+            import traceback
+            logger.warning(traceback.format_exc())
     else:
         logger.info(f"   Using SQLite (local)")
     
@@ -143,6 +153,16 @@ async def main():
     
     # На production (Railway) используем HTTP без SSL
     # Railway автоматически добавляет HTTPS на уровне reverse proxy
+    logger.info("🔧 Importing Flask web server...")
+    try:
+        from bot.web.app import run_web_server
+        logger.info("✅ Flask web server imported successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to import Flask web server: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
+    
     port_str = os.getenv("PORT", "5000")
     port = int(port_str)  # Railway передаёт PORT в окружении
     is_production = os.getenv("RAILWAY_ENVIRONMENT") is not None
