@@ -291,6 +291,14 @@
         <div class="section">
             <h2>⭐ Фарм BP</h2>
             
+            <!-- Переключатель VIP - сверху -->
+            <div class="vip-toggle-container">
+                <label class="vip-toggle-label">
+                    <input type="checkbox" id="platinumVipToggle" onchange="togglePlatinumVip()" class="vip-toggle-input">
+                    <span class="vip-toggle-text">💎 Платинум VIP</span>
+                </label>
+            </div>
+            
             <!-- Статистика -->
             <div class="stat-group">
                 <div class="stat-item">
@@ -305,14 +313,6 @@
                     <span class="stat-label">🎯 Всего:</span>
                     <span class="stat-value" id="bpTotal">0</span>
                 </div>
-            </div>
-            
-            <!-- Переключатель VIP -->
-            <div class="form-field">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="platinumVipToggle" onchange="togglePlatinumVip()">
-                    <span>💎 Платинум VIP</span>
-                </label>
             </div>
             
             <!-- Задания по категориям -->
