@@ -243,7 +243,7 @@ async function submitAddItem(event) {
 
 async function loadItems() {
     try {
-        console.log('📦 Loading items for user:', userId);
+        console.log('Загрузка товаров для пользователя:', userId);
         
         const response = await fetch('/api/get-items', {
             headers: {
@@ -251,9 +251,9 @@ async function loadItems() {
             }
         });
         
-        console.log('📦 Response status:', response.status);
+        console.log('Статус ответа:', response.status);
         const data = await response.json();
-        console.log('📦 Response data:', data);
+        console.log('Данные ответа:', data);
         
         if (data.success && data.items.length > 0) {
             // Показываем только ПРОДАННЫЕ товары (история продаж)
@@ -264,11 +264,11 @@ async function loadItems() {
                     <div class="item-card">
                         <div class="item-header">
                             <h4>${item.name}</h4>
-                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
                         </div>
-                        <span class="badge sold">✅ Продано</span>
-                        <p class="item-category">📁 ${item.category}</p>
-                        <p class="item-price">💰 ${formatPrice(item.price)}$</p>
+                        <span class="badge sold"><i class="fas fa-check"></i> Продано</span>
+                        <p class="item-category"><i class="fas fa-folder"></i> ${item.category}</p>
+                        <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(item.price)}$</p>
                     </div>
                 `).join('');
             } else {
@@ -314,7 +314,7 @@ async function submitSellItem(itemId, salePrice) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}$`, 'success');
+            showNotification(`<i class="fas fa-check"></i> ${result.message}\n<i class="fas fa-coins"></i> Прибыль: ${result.profit}$`, 'success');
             loadInventory();
         } else {
             showNotification(result.error, 'error');
@@ -383,14 +383,14 @@ async function loadCars() {
             document.getElementById('carsList').innerHTML = data.cars.map(car => `
                 <div class="car-card">
                     <h4>${car.name}</h4>
-                    <p class="car-cost">💰 ${formatPrice(car.cost)}$</p>
-                    <button class="btn btn-small" onclick="openRentalModal(${car.id}, '${car.name}')">💼 Сдать в аренду</button>
+                    <p class="car-cost"><i class="fas fa-coins"></i> ${formatPrice(car.cost)}$</p>
+                    <button class="btn btn-small" onclick="openRentalModal(${car.id}, '${car.name}')"><i class="fas fa-briefcase"></i> Сдать в аренду</button>
                 </div>
             `).join('');
         } else {
             document.getElementById('carsList').innerHTML = `
                 <div class="empty">
-                    <p>🚗 Автомобили будут отображаться здесь</p>
+                    <p><i class="fas fa-car"></i> Автомобили будут отображаться здесь</p>
                     <p style="font-size: 12px; color: #bbb;">Добавьте первый автомобиль кнопкой выше</p>
                 </div>
             `;
@@ -423,7 +423,7 @@ function openRentalModal(carId, carName) {
 }
 
 function openSaleModal(itemId, itemName, itemPrice) {
-    const price = prompt(`💵 Введите цену продажи "${itemName}" (куплено за ${itemPrice}$):`, itemPrice);
+    const price = prompt(`<i class="fas fa-receipt"></i> Введите цену продажи "${itemName}" (куплено за ${itemPrice}$):`, itemPrice);
     if (!price) return;
     submitSellItem(itemId, parseFloat(price));
 }
@@ -659,23 +659,23 @@ async function loadInventory() {
                     <div class="item-card">
                         <div class="item-header">
                             <h4>${item.name}</h4>
-                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить">✕</button>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
                         </div>
-                        <span class="badge unsold">⏳ В наличии</span>
-                        <p class="item-category">📁 ${item.category}</p>
-                        <p class="item-price">💰 ${formatPrice(item.price)}$</p>
+                        <span class="badge unsold"><i class="fas fa-hourglass-end"></i> В наличии</span>
+                        <p class="item-category"><i class="fas fa-folder"></i> ${item.category}</p>
+                        <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(item.price)}$</p>
                         <div class="btn-group">
-                            <button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})">💵 Продать</button>
+                            <button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})"><i class="fas fa-receipt"></i> Продать</button>
                         </div>
                     </div>
                 `).join('');
             } else {
-                inventoryList.innerHTML = '<p class="empty">📦 Нет товаров в наличии</p>';
+                inventoryList.innerHTML = '<p class="empty"><i class="fas fa-box"></i> Нет товаров в наличии</p>';
             }
         } else {
             inventoryList.innerHTML = `
                 <div class="empty">
-                    <p>📦 Товары будут отображаться здесь</p>
+                    <p><i class="fas fa-box"></i> Товары будут отображаться здесь</p>
                     <p style="font-size: 12px; color: #bbb;">Добавьте первый товар кнопкой выше</p>
                 </div>
             `;
@@ -808,7 +808,7 @@ async function loadBuyPrices() {
                 </div>
             `).join('');
         } else {
-            buyPricesList.innerHTML = '<p class="empty">💰 Цены не добавлены</p>';
+            buyPricesList.innerHTML = '<p class="empty"><i class="fas fa-coins"></i> Цены не добавлены</p>';
         }
     } catch (error) {
         console.error('Error loading buy prices:', error);
@@ -853,7 +853,7 @@ async function submitBuyPrice() {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('✅ Цена добавлена', 'success');
+            showNotification('<i class="fas fa-check"></i> Цена добавлена', 'success');
             // Очищаем поля
             nameInput.value = '';
             priceInput.value = '';
@@ -888,7 +888,7 @@ async function deleteBuyPrice(priceId) {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('✅ Цена удалена', 'success');
+            showNotification('<i class="fas fa-check"></i> Цена удалена', 'success');
             loadBuyPrices();
         } else {
             showNotification(data.error || 'Ошибка удаления', 'error');
@@ -941,7 +941,7 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
             
             const content = `
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
-                    📊 Фильтр: ${timeLabel}${dealLabel}
+                    <i class="fas fa-chart-pie"></i> Фильтр: ${timeLabel}${dealLabel}
                 </div>
                 <div class="stats-container">
                     <div class="stat-item">
@@ -980,7 +980,7 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
                         `).join('')}
                     </div>
                 </div>
-                ` : '<p class="empty">📊 Нет данных для отображения</p>'}
+                ` : '<p class="empty"><i class="fas fa-chart-pie"></i> Нет данных для отображения</p>'}
             `;
             statsContent.innerHTML = content;
         } else {
@@ -1119,12 +1119,12 @@ function loadRentalStats() {
             if (data.cars_stats && data.cars_stats.length > 0) {
                 carsTableHtml = `
                     <div class="stats-section">
-                        <h4>📊 Статистика по автомобилям:</h4>
+                        <h4><i class="fas fa-chart-pie"></i> Статистика по автомобилям:</h4>
                         <div class="cars-stats-table">
                             ${data.cars_stats.map(car => `
                                 <div class="car-stat-item">
                                     <div class="car-stat-header">
-                                        <span class="car-name">🚗 ${car.car_name}</span>
+                                        <span class="car-name"><i class="fas fa-car"></i> ${car.car_name}</span>
                                         <span class="car-income">${formatPrice(car.total_income)}$</span>
                                     </div>
                                     <div class="car-stat-details">
