@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+import os
 
 from bot.keyboards.keyboards import get_main_keyboard, get_resell_menu, get_rental_menu
 
@@ -36,9 +37,18 @@ async def back_to_main(callback: CallbackQuery):
 
 @router.message(F.text == "/start")
 async def start_handler(message: Message):
-    """Обработчик команды /start"""
+    """Обработчик команды /start - открывает WebApp сразу"""
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://192.168.1.122:5000")
+    
+    # Сразу открываем WebApp без промежуточного меню
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💼 Открыть приложение", web_app=WebAppInfo(url=f"{WEBHOOK_URL}/#resell"))],
+        ]
+    )
+    
     await message.answer(
         "👋 Добро пожаловать в бот управления финансами!\n\n"
-        "Выберите нужный режим:",
-        reply_markup=get_main_keyboard()
+        "💼 Нажми кнопку ниже, чтобы открыть приложение:",
+        reply_markup=keyboard
     )
