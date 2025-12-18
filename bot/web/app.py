@@ -66,6 +66,16 @@ try:
                     """)
                 )
                 has_is_past = result.scalar()
+                
+                if not has_is_past:
+                    logger.info("🔧 Adding is_past column to rentals table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT false;")
+                    )
+                    connection.commit()
+                    logger.info("✅ is_past column added to PostgreSQL")
+                else:
+                    logger.info("✅ is_past column already exists")
             else:
                 # SQLite: используем PRAGMA
                 result = connection.execute(
@@ -73,18 +83,20 @@ try:
                 )
                 columns = [row[1] for row in result.fetchall()]
                 has_is_past = 'is_past' in columns
-            
-            if not has_is_past:
-                logger.info("🔧 Adding is_past column to rentals table...")
-                connection.execute(
-                    text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT 0;")
-                )
-                connection.commit()
-                logger.info("✅ is_past column added")
-            else:
-                logger.info("✅ is_past column already exists")
+                
+                if not has_is_past:
+                    logger.info("🔧 Adding is_past column to rentals table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE rentals ADD COLUMN is_past BOOLEAN DEFAULT 0;")
+                    )
+                    connection.commit()
+                    logger.info("✅ is_past column added to SQLite")
+                else:
+                    logger.info("✅ is_past column already exists")
     except Exception as e:
-        logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
+        logger.error(f"❌ Error adding is_past column: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # Проверяем и добавляем has_platinum_vip колонку если её нет (для PostgreSQL и SQLite)
     try:
@@ -100,6 +112,16 @@ try:
                     """)
                 )
                 has_vip = result.scalar()
+                
+                if not has_vip:
+                    logger.info("🔧 Adding has_platinum_vip column to users table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE users ADD COLUMN has_platinum_vip BOOLEAN DEFAULT false;")
+                    )
+                    connection.commit()
+                    logger.info("✅ has_platinum_vip column added to PostgreSQL")
+                else:
+                    logger.info("✅ has_platinum_vip column already exists")
             else:
                 # SQLite: используем PRAGMA
                 result = connection.execute(
@@ -107,18 +129,20 @@ try:
                 )
                 columns = [row[1] for row in result.fetchall()]
                 has_vip = 'has_platinum_vip' in columns
-            
-            if not has_vip:
-                logger.info("🔧 Adding has_platinum_vip column to users table...")
-                connection.execute(
-                    text("ALTER TABLE users ADD COLUMN has_platinum_vip BOOLEAN DEFAULT 0;")
-                )
-                connection.commit()
-                logger.info("✅ has_platinum_vip column added")
-            else:
-                logger.info("✅ has_platinum_vip column already exists")
+                
+                if not has_vip:
+                    logger.info("🔧 Adding has_platinum_vip column to users table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE users ADD COLUMN has_platinum_vip BOOLEAN DEFAULT 0;")
+                    )
+                    connection.commit()
+                    logger.info("✅ has_platinum_vip column added to SQLite")
+                else:
+                    logger.info("✅ has_platinum_vip column already exists")
     except Exception as e:
-        logger.warning(f"⚠️ Could not add has_platinum_vip column (might already exist): {e}")
+        logger.error(f"❌ Error adding has_platinum_vip column: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # Инициализируем BP задания
     try:
