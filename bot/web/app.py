@@ -1301,11 +1301,23 @@ def toggle_platinum_vip():
 
 def run_web_server(port=5000, cert_file=None, key_file=None):
     """Запустить веб-сервер с HTTPS"""
-    ssl_context = None
-    if cert_file and key_file:
-        ssl_context = (cert_file, key_file)
-    
-    app.run(host='0.0.0.0', port=port, debug=False, ssl_context=ssl_context, use_reloader=False)
+    try:
+        ssl_context = None
+        if cert_file and key_file:
+            ssl_context = (cert_file, key_file)
+        
+        logger.info(f"🚀 Starting Flask web server on 0.0.0.0:{port}")
+        logger.info(f"   SSL: {'Enabled' if ssl_context else 'Disabled'}")
+        logger.info(f"   Debug: False")
+        
+        # Важно: use_reloader=False чтобы не было двойного запуска в production
+        app.run(host='0.0.0.0', port=port, debug=False, ssl_context=ssl_context, use_reloader=False)
+        
+    except Exception as e:
+        logger.error(f"❌ Flask server error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 
 # Финальная проверка при импорте

@@ -143,8 +143,15 @@ async def main():
     
     # На production (Railway) используем HTTP без SSL
     # Railway автоматически добавляет HTTPS на уровне reverse proxy
-    port = int(os.getenv("PORT", "5000"))  # Railway передаёт PORT в окружении
+    port_str = os.getenv("PORT", "5000")
+    port = int(port_str)  # Railway передаёт PORT в окружении
     is_production = os.getenv("RAILWAY_ENVIRONMENT") is not None
+    
+    logger.info(f"🌐 Web server configuration:")
+    logger.info(f"   PORT from env: {port_str}")
+    logger.info(f"   PORT as int: {port}")
+    logger.info(f"   RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
+    logger.info(f"   Is Production: {is_production}")
     
     if is_production:
         # На production: без SSL, Railway сам управляет HTTPS
@@ -161,7 +168,16 @@ async def main():
             logger.info("🟡 Development mode: Web server will use HTTP")
     
     web_thread.start()
-    logger.info(f"✅ Web server started on port {port}")
+    logger.info(f"✅ Web server thread started on port {port}")
+    
+    # Даём серверу время на запуск и проверяем, жив ли поток
+    import time
+    time.sleep(2)
+    if not web_thread.is_alive():
+        logger.error("❌ Web server thread failed to start!")
+        logger.error("Check logs above for Flask errors")
+    else:
+        logger.info(f"✅ Web server thread is alive and listening on 0.0.0.0:{port}")
     
     # Запускаем фоновую задачу уведомлений
     notification_task = asyncio.create_task(check_rental_notifications(bot))
