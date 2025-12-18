@@ -119,6 +119,11 @@ header h1 {
 #bp-farm-tab h2 {
     margin-bottom: 0 !important;
     margin-top: 0 !important;
+    color: #fff !important;
+    background: var(--accent-color);
+    padding: 15px 20px !important;
+    border-radius: 6px;
+    margin: 0 !important;
 }
 
 #bp-farm-tab .section {
