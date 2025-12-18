@@ -27,7 +27,15 @@ def migrate_postgresql():
     
     try:
         logger.info("🔗 Подключаемся к PostgreSQL...")
-        engine = create_engine(DATABASE_URL)
+        
+        # Конвертируем async DATABASE_URL в sync (postgresql+asyncpg -> postgresql+psycopg2)
+        sync_db_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+        if sync_db_url == DATABASE_URL:
+            # На случай если уже sync URL
+            sync_db_url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://")
+        
+        logger.info(f"📝 Используем sync URL для миграции")
+        engine = create_engine(sync_db_url, echo=False)
         
         with engine.connect() as connection:
             # 1. Добавляем has_platinum_vip колонку
@@ -105,6 +113,7 @@ def migrate_postgresql():
                 logger.info("⚠️ BPCompletion таблица не найдена (она будет создана автоматически)")
         
         logger.info("\n✅ Миграция завершена успешно!")
+        engine.dispose()
         return True
         
     except Exception as e:

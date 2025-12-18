@@ -33,17 +33,25 @@ try:
     
     # Преобразуем для синхронного использования
     if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
-        # PostgreSQL: используем psycopg2
-        SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
-        SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("postgresql+asyncpg", "postgresql")
+        # PostgreSQL: преобразуем asyncpg -> psycopg2 для синхронного доступа
+        SYNC_DATABASE_URL = DATABASE_URL
+        # Заменяем asyncpg на psycopg2
+        SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+        # На случай если уже без диалекта
+        if "+psycopg2" not in SYNC_DATABASE_URL and "postgresql://" in SYNC_DATABASE_URL:
+            SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://")
+        
         logger.info(f"   Using PostgreSQL (psycopg2)")
         connect_args = {}
     else:
         # SQLite: локально
-        SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+        SYNC_DATABASE_URL = DATABASE_URL
+        if "+aiosqlite" in SYNC_DATABASE_URL:
+            SYNC_DATABASE_URL = SYNC_DATABASE_URL.replace("sqlite+aiosqlite://", "sqlite:///")
         logger.info(f"   Using SQLite")
         connect_args = {"check_same_thread": False}
     
+    logger.info(f"   SYNC_DATABASE_URL: {SYNC_DATABASE_URL}")
     sync_engine = create_engine(SYNC_DATABASE_URL, connect_args=connect_args)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     
