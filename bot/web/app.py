@@ -86,6 +86,40 @@ try:
     except Exception as e:
         logger.warning(f"⚠️ Could not add is_past column (might already exist): {e}")
     
+    # Проверяем и добавляем has_platinum_vip колонку если её нет (для PostgreSQL и SQLite)
+    try:
+        with sync_engine.connect() as connection:
+            if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+                # PostgreSQL: используем information_schema
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='users' AND column_name='has_platinum_vip'
+                    );
+                    """)
+                )
+                has_vip = result.scalar()
+            else:
+                # SQLite: используем PRAGMA
+                result = connection.execute(
+                    text("PRAGMA table_info(users)")
+                )
+                columns = [row[1] for row in result.fetchall()]
+                has_vip = 'has_platinum_vip' in columns
+            
+            if not has_vip:
+                logger.info("🔧 Adding has_platinum_vip column to users table...")
+                connection.execute(
+                    text("ALTER TABLE users ADD COLUMN has_platinum_vip BOOLEAN DEFAULT 0;")
+                )
+                connection.commit()
+                logger.info("✅ has_platinum_vip column added")
+            else:
+                logger.info("✅ has_platinum_vip column already exists")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not add has_platinum_vip column (might already exist): {e}")
+    
     # Инициализируем BP задания
     try:
         session = SessionLocal()
