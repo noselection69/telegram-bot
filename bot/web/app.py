@@ -156,8 +156,14 @@ try:
     try:
         session = SessionLocal()
         existing = session.query(BPTask).count()
-        if existing == 0:
-            logger.info("🔧 Initializing BP tasks...")
+        
+        # Проверяем нужно ли обновить задания (если их меньше 50, значит старая версия)
+        if existing < 50:
+            logger.info("� Updating BP tasks (old version detected)...")
+            # Очищаем старые задания
+            session.query(BPTask).delete()
+            session.commit()
+            
             bp_tasks_data = [
                 # ЛЁГКИЕ (28 заданий)
                 {"name": "3 часа в онлайне (можно выполнять многократно за день)", "category": "Легкие", "bp_without_vip": 2, "bp_with_vip": 4},
@@ -226,9 +232,9 @@ try:
                 task = BPTask(**task_data)
                 session.add(task)
             session.commit()
-            logger.info(f"✅ BP tasks initialized ({len(bp_tasks_data)} tasks - 28 easy + 19 medium + 12 hard)")
+            logger.info(f"✅ BP tasks updated ({len(bp_tasks_data)} tasks - 28 easy + 19 medium + 12 hard)")
         else:
-            logger.info(f"✅ BP tasks already exist ({existing} tasks)")
+            logger.info(f"✅ BP tasks already up to date ({existing} tasks)")
         session.close()
     except Exception as e:
         logger.warning(f"⚠️ Could not initialize BP tasks: {e}")
