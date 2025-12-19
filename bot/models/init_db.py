@@ -70,8 +70,8 @@ class Database:
             await self.engine.dispose()
 
     def get_session(self):
-        """Получить сессию"""
-        return self.async_session()
+        """Получить фабрику сессий"""
+        return self.async_session
 
 
 db = Database()
