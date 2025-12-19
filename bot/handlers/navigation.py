@@ -92,23 +92,24 @@ async def menu_handler(message: Message):
 @router.message(F.commands(['msg']))
 async def msg_handler(message: Message):
     """Администраторская команда для отправки сообщений всем пользователям"""
-    # Проверка админа
-    if message.from_user.id != ADMIN_ID:
-        await message.answer('Доступ запрещён! Только администратор может использовать эту команду.')
-        return
-    
-    # Проверка параметров
-    parts = message.text.split(' ', 1)
-    if len(parts) < 2:
-        await message.answer('Используйте: /msg текст сообщения')
-        return
-    
-    text = parts[1]
-    await message.answer(f'⏳ Отправляю "{text}" всем пользователям...')
-    
     try:
-        # Получаем всех пользователей из БД (правильный async context manager)
-        async with db.get_session() as session:
+        # Проверка админа
+        if message.from_user.id != ADMIN_ID:
+            await message.answer('❌ Доступ запрещён! Только администратор (ID 360028214) может использовать эту команду.')
+            return
+        
+        # Проверка параметров
+        parts = message.text.split(' ', 1)
+        if len(parts) < 2:
+            await message.answer('❌ Используйте: /msg текст сообщения')
+            return
+        
+        text = parts[1]
+        await message.answer(f'⏳ Отправляю "{text}" всем пользователям...')
+        
+        # Получаем всех пользователей из БД
+        session_factory = db.get_session()
+        async with session_factory() as session:
             result = await session.execute(select(User))
             users = result.scalars().all()
         
@@ -129,4 +130,6 @@ async def msg_handler(message: Message):
         
         await message.answer(f'✅ Отправлено: {sent}\n❌ Ошибок: {failed}')
     except Exception as e:
-        await message.answer(f'❌ Ошибка при отправке: {str(e)}')
+        import traceback
+        error_msg = f'❌ Критическая ошибка: {str(e)}\n{traceback.format_exc()}'
+        await message.answer(error_msg[:4096])  # Telegram лимит 4096 символов
