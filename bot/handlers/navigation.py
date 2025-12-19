@@ -85,32 +85,43 @@ async def menu_handler(message: Message):
 
 @router.message(F.commands(['msg']))
 async def msg_handler(message: Message):
+    """Администраторская команда для отправки сообщений всем пользователям"""
+    # Проверка админа
     if message.from_user.id != ADMIN_ID:
-        await message.answer('Доступ запрещен!')
+        await message.answer(f'❌ Доступ запрещен! Ваш ID: {message.from_user.id}')
         return
     
+    # Проверка параметров
     parts = message.text.split(' ', 1)
     if len(parts) < 2:
-        await message.answer('Используйте: /msg текст')
+        await message.answer('❌ Используйте: /msg текст сообщения')
         return
     
     text = parts[1]
-    await message.answer(f'Отправляю...')
+    await message.answer(f'⏳ Отправляю "{text}" всем пользователям...')
     
     try:
+        # Получаем всех пользователей из БД
         session = db.get_session()
         async with session() as s:
             result = await s.execute(select(User))
             users = result.scalars().all()
         
+        await message.answer(f'📊 Найдено пользователей: {len(users)}')
+        
+        # Отправляем сообщение каждому
         sent = 0
+        failed = 0
         for user in users:
             try:
-                await message.bot.send_message(user.telegram_id, f'Уведомление: {text}')
+                await message.bot.send_message(
+                    user.telegram_id, 
+                    f'📢 Сообщение от администратора:\n\n{text}'
+                )
                 sent += 1
-            except:
-                pass
+            except Exception as e:
+                failed += 1
         
-        await message.answer(f'Отправлено: {sent}')
+        await message.answer(f'✅ Отправлено: {sent}\n❌ Ошибок: {failed}')
     except Exception as e:
-        await message.answer(f'Ошибка: {str(e)}')
+        await message.answer(f'❌ Ошибка при отправке: {str(e)}')

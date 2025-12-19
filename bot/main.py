@@ -131,9 +131,17 @@ async def set_menu_button(bot: Bot):
 async def set_default_app_button(bot: Bot):
     """Установить Default Web App Button (кнопка в превью)"""
     try:
-        default_button = MenuButtonDefault()
+        # Получаем URL приложения из переменных окружения или используем по умолчанию
+        app_url = os.getenv('WEB_APP_URL', 'https://web-production-70ac2.up.railway.app')
+        
+        # Создаём Default Web App кнопку для превью
+        # Это будет кнопка которая появляется ПЕРЕД входом в чат
+        default_button = MenuButtonWebApp(
+            text="Open App",
+            web_app=WebAppInfo(url=app_url)
+        )
         await bot.set_chat_menu_button(menu_button=default_button)
-        logger.info("✅ Default Web App Button установлен")
+        logger.info(f"✅ Default Web App Button установлен: {app_url}")
     except Exception as e:
         logger.error(f"❌ Ошибка при установке Default Web App Button: {e}")
 
