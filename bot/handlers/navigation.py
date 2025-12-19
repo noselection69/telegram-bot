@@ -14,32 +14,32 @@ ADMIN_ID = 360028214
 router = Router()
 
 
-@router.message(F.commands(['ping']))
+@router.message(F.text == "/ping")
 async def ping_handler(message: Message):
     """Простой тест что бот живой"""
     await message.answer('🏓 Pong!')
 
 
-@router.message(F.commands(['myid']))
+@router.message(F.text == "/myid")
 async def myid_handler(message: Message):
     """Показать свой Telegram ID"""
     await message.answer(f'Ваш ID: {message.from_user.id}')
 
 
-@router.message(F.commands(['test']))
+@router.message(F.text == "/test")
 async def test_handler(message: Message):
     """Тестовая команда"""
     await message.answer(f'✅ Команда /test работает!')
 
 
-@router.message(F.commands(['debug']))
+@router.message(F.text == "/debug")
 async def debug_handler(message: Message):
     """Показать отладочную информацию"""
     import os
     web_app_url = os.getenv('WEB_APP_URL', 'NOT SET')
     webhook_url = os.getenv('WEBHOOK_URL', 'NOT SET')
     await message.answer(
-        f' DEBUG INFO:\n'
+        f'🔍 DEBUG INFO:\n'
         f'Ваш ID: {message.from_user.id}\n'
         f'Admin ID: {ADMIN_ID}\n'
         f'ID совпадает: {message.from_user.id == ADMIN_ID}\n\n'
@@ -96,7 +96,7 @@ async def menu_handler(message: Message):
     )
 
 
-@router.message(F.commands(['msg']))
+@router.message(F.text.startswith("/msg"))
 async def msg_handler(message: Message):
     """Администраторская команда для отправки сообщений всем пользователям"""
     try:
