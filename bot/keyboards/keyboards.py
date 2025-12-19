@@ -1,8 +1,9 @@
 import os
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
-# Получаем URL из переменных окружения
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://web-production-70ac2.up.railway.app")
+# Получаем URL из переменных окружения (используем WEB_APP_URL как в main.py)
+# Fallback на https://web-production-70ac2.up.railway.app если не установлена
+WEBHOOK_URL = os.getenv("WEB_APP_URL") or os.getenv("WEBHOOK_URL", "https://web-production-70ac2.up.railway.app")
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
