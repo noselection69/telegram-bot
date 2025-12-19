@@ -108,8 +108,7 @@ async def msg_handler(message: Message):
         await message.answer(f'⏳ Отправляю "{text}" всем пользователям...')
         
         # Получаем всех пользователей из БД
-        session_factory = db.get_session()
-        async with session_factory() as session:
+        async with db.get_session() as session:
             result = await session.execute(select(User))
             users = result.scalars().all()
         
