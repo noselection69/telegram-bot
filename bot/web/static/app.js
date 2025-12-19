@@ -1548,7 +1548,23 @@ function stopTimer(timerName) {
 
 // Функция для воспроизведения звука
 function playTimerSound() {
-    // Создаем звуковое уведомление через Web Audio API
+    // Проигрываем пользовательский звук из файла
+    try {
+        const audio = new Audio('/static/sound.mp3');
+        audio.volume = 0.8; // Громкость 80%
+        audio.play().catch(err => {
+            console.warn('Could not play sound:', err);
+            // Если не удалось воспроизвести файл, используем встроенный звук
+            playFallbackSound();
+        });
+    } catch(e) {
+        console.warn('Audio playback not available:', e);
+        playFallbackSound();
+    }
+}
+
+// Резервный встроенный звук (если файл не найден)
+function playFallbackSound() {
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const now = audioContext.currentTime;
@@ -1580,7 +1596,7 @@ function playTimerSound() {
         osc2.start(now + 0.3);
         osc2.stop(now + 0.5);
     } catch(e) {
-        console.warn('Audio context not available:', e);
+        console.warn('Fallback sound not available:', e);
     }
 }
 
