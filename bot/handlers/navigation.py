@@ -110,10 +110,9 @@ async def msg_handler(message: Message):
     await message.answer(f'⏳ Отправляю "{text}" всем пользователям...')
     
     try:
-        # Получаем всех пользователей из БД
-        session = db.get_session()
-        async with session() as s:
-            result = await s.execute(select(User))
+        # Получаем всех пользователей из БД (правильный async context manager)
+        async with db.get_session() as session:
+            result = await session.execute(select(User))
             users = result.scalars().all()
         
         await message.answer(f'📊 Найдено пользователей: {len(users)}')
