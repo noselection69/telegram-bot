@@ -20,6 +20,12 @@ async def myid_handler(message: Message):
     await message.answer(f'Ваш ID: {message.from_user.id}')
 
 
+@router.message(F.commands(['test']))
+async def test_handler(message: Message):
+    """Тестовая команда"""
+    await message.answer(f'✅ Команда /test работает!')
+
+
 @router.message(F.commands(['debug']))
 async def debug_handler(message: Message):
     """Показать отладочную информацию"""
@@ -86,9 +92,12 @@ async def menu_handler(message: Message):
 @router.message(F.commands(['msg']))
 async def msg_handler(message: Message):
     """Администраторская команда для отправки сообщений всем пользователям"""
+    # Отправляем ответ что команда принята (для отладки)
+    await message.answer(f'📨 Команда /msg получена. Ваш ID: {message.from_user.id}, Админ ID: {ADMIN_ID}')
+    
     # Проверка админа
     if message.from_user.id != ADMIN_ID:
-        await message.answer(f'❌ Доступ запрещен! Ваш ID: {message.from_user.id}')
+        await message.answer(f'❌ Доступ запрещен! Только администратор может использовать эту команду.')
         return
     
     # Проверка параметров
