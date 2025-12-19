@@ -20,7 +20,7 @@ def get_open_app_keyboard() -> InlineKeyboardMarkup:
     """Inline кнопка для открытия приложения"""
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📱 Открыть приложение", web_app=WebAppInfo(url=WEBHOOK_URL))],
+            [InlineKeyboardButton(text="Helper", web_app=WebAppInfo(url=WEBHOOK_URL))],
         ]
     )
     return keyboard

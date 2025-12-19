@@ -6,7 +6,7 @@ from pathlib import Path
 import ssl
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher
-from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
+from aiogram.types import BotCommand, MenuButtonWebApp, MenuButtonDefault, WebAppInfo
 from aiogram.fsm.storage.memory import MemoryStorage
 import threading
 
@@ -115,7 +115,7 @@ async def set_menu_button(bot: Bot):
         
         # Создаём Web App кнопку
         menu_button = MenuButtonWebApp(
-            text="� Открыть приложение",
+            text="Helper",
             web_app=WebAppInfo(url=app_url)
         )
         
@@ -125,6 +125,17 @@ async def set_menu_button(bot: Bot):
     except Exception as e:
         logger.error(f"❌ Ошибка при установке Menu Button: {e}")
 
+
+
+
+async def set_default_app_button(bot: Bot):
+    """Установить Default Web App Button (кнопка в превью)"""
+    try:
+        default_button = MenuButtonDefault()
+        await bot.set_chat_menu_button(menu_button=default_button)
+        logger.info("✅ Default Web App Button установлен")
+    except Exception as e:
+        logger.error(f"❌ Ошибка при установке Default Web App Button: {e}")
 
 async def main():
     """Главная функция"""
@@ -172,6 +183,9 @@ async def main():
     
     # Устанавливаем Menu Button
     await set_menu_button(bot)
+    
+    # Устанавливаем Default Web App Button
+    await set_default_app_button(bot)
     
     # На production (Railway) используем HTTP без SSL
     # Railway автоматически добавляет HTTPS на уровне reverse proxy
