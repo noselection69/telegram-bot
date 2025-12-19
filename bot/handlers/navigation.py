@@ -41,6 +41,22 @@ async def debug_handler(message: Message):
     )
 
 
+@router.message(F.commands(['debug']))
+async def debug_handler(message: Message):
+    """Показать отладочную информацию"""
+    import os
+    web_app_url = os.getenv('WEB_APP_URL', 'NOT SET')
+    webhook_url = os.getenv('WEBHOOK_URL', 'NOT SET')
+    await message.answer(
+        f'🔍 DEBUG INFO:\n'
+        f'Ваш ID: {message.from_user.id}\n'
+        f'Admin ID: {ADMIN_ID}\n'
+        f'ID совпадает: {message.from_user.id == ADMIN_ID}\n\n'
+        f'WEB_APP_URL: {web_app_url}\n'
+        f'WEBHOOK_URL: {webhook_url}'
+    )
+
+
 @router.message(F.text == "📊 Калькулятор перекупа")
 async def show_resell_menu(message: Message):
     """Показать меню калькулятора перекупа"""
