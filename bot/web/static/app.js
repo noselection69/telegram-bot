@@ -382,9 +382,10 @@ async function loadCars() {
         if (data.success && data.cars.length > 0) {
             document.getElementById('carsList').innerHTML = data.cars.map(car => `
                 <div class="car-card">
-                    <h4>${car.name}</h4>
-                    <p class="car-cost"><i class="fas fa-coins"></i> ${formatPrice(car.cost)}$</p>
-                    <button class="btn btn-small" onclick="openRentalModal(${car.id}, '${car.name}')"><i class="fas fa-briefcase"></i> Сдать в аренду</button>
+                    <div style="font-size: 24px; color: var(--accent-color);"><i class="fas fa-car"></i></div>
+                    <h4 style="font-size: 12px; font-weight: 600; margin: 0; line-height: 1.2;">${car.name}</h4>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;"><i class="fas fa-coins"></i> ${formatPrice(car.cost)}$</p>
+                    <button class="btn btn-small" onclick="openRentalModal(${car.id}, '${car.name}')" style="font-size: 11px; padding: 6px 10px; margin-top: auto;"><i class="fas fa-briefcase"></i> Сдать</button>
                 </div>
             `).join('');
         } else {
@@ -1079,17 +1080,15 @@ function loadCarsForView() {
                 const paybackColor = car.payback_percent >= 100 ? '#4caf50' : 
                                     car.payback_percent >= 50 ? '#ff9800' : '#f44336';
                 return `
-                    <div class="item-card">
-                        <div class="item-header">
-                            <h4>${car.name}</h4>
-                            <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
+                    <div class="car-card" style="position: relative;">
+                        <button class="delete-btn" onclick="deleteCar(${car.id})" title="Удалить" style="position: absolute; top: 8px; right: 8px;"><i class="fas fa-xmark"></i></button>
+                        <div style="font-size: 20px; color: var(--accent-color);"><i class="fas fa-car"></i></div>
+                        <h4 style="font-size: 12px; font-weight: 600; margin: 0; line-height: 1.2;">${car.name}</h4>
+                        <p style="font-size: 10px; color: var(--text-secondary); margin: 0;"><i class="fas fa-coins"></i> ${formatPrice(car.cost)}$</p>
+                        <div class="payback-bar" style="width: 100%; height: 3px; background: var(--bg-tertiary); border-radius: 2px; margin-top: 6px; overflow: hidden;">
+                            <div class="payback-fill" style="height: 100%; width: ${Math.min(100, car.payback_percent)}%; background-color: ${paybackColor};"></div>
                         </div>
-                        <p class="item-price"><i class="fas fa-coins"></i> Стоимость: ${formatPrice(car.cost)}$</p>
-                        <p class="item-price"><i class="fas fa-chart-pie"></i> Доход: ${formatPrice(car.total_income)}$</p>
-                        <div class="payback-bar">
-                            <div class="payback-fill" style="width: ${Math.min(100, car.payback_percent)}%; background-color: ${paybackColor};"></div>
-                        </div>
-                        <p class="payback-text"><i class="fas fa-target"></i> Окупилось: ${car.payback_percent}% (${car.rentals_count} аренд)</p>
+                        <p style="font-size: 9px; color: var(--text-secondary); margin: 4px 0 0 0;">🎯 ${car.payback_percent}%</p>
                     </div>
                 `;
             }).join('');

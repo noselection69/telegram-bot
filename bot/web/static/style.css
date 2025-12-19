@@ -314,21 +314,47 @@ header h1 {
     box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
 }
 
+.btn-small {
+    padding: 6px 10px;
+    font-size: 11px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 6px;
+    width: auto;
+}
+
+.btn-small:hover {
+    background: var(--accent-light);
+    transform: scale(1.05);
+}
+
 /* Списки */
-.items-list,
-.cars-list {
+.items-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.cars-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
 }
 
 .item-card,
 .car-card {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
+    border-radius: 10px;
+    padding: 12px 10px;
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    min-height: 120px;
+    justify-content: center;
 }
 
 .item-card:hover,
