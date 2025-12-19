@@ -1364,7 +1364,8 @@ function startTimer(timerName, duration) {
         remaining: duration,
         startTime: Date.now(),
         endTime: Date.now() + (duration * 1000),
-        interval: null
+        interval: null,
+        paused: false
     };
     
     activeTimers[timerName] = timerData;
@@ -1410,8 +1411,11 @@ function renderActiveTimer(timerName) {
                 </div>
             </div>
             <div class="active-timer-controls">
+                <button class="timer-control-btn" id="pause-btn-${timerName}" onclick="togglePauseTimer('${timerName}')">
+                    <i class="fas fa-pause"></i> Пауза
+                </button>
                 <button class="timer-stop-btn" onclick="stopTimer('${timerName}')">
-                    <i class="fas fa-stop-circle"></i> Стоп
+                    <i class="fas fa-times-circle"></i> Стоп
                 </button>
             </div>
         `;
@@ -1642,6 +1646,29 @@ function startCustomTimer() {
     
     // Запускаем таймер
     startTimer(name, totalSeconds);
+}
+
+// Функция паузы/продолжения таймера
+function togglePauseTimer(timerName) {
+    const timerData = activeTimers[timerName];
+    if (!timerData) return;
+    
+    const pauseBtn = document.getElementById(`pause-btn-${timerName}`);
+    
+    if (timerData.paused) {
+        // Продолжаем таймер
+        timerData.paused = false;
+        timerData.endTime = Date.now() + timerData.remaining;
+        pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Пауза';
+        showNotification(`▶️ Таймер "${timerName}" продолжен`, 'info');
+        startTimerCountdown(timerName);
+    } else {
+        // Ставим на паузу
+        timerData.paused = true;
+        clearInterval(timerData.interval);
+        pauseBtn.innerHTML = '<i class="fas fa-play"></i> Продолжить';
+        showNotification(`⏸️ Таймер "${timerName}" на паузе`, 'warning');
+    }
 }
 
 // Добавляем анимацию для выезда элемента
