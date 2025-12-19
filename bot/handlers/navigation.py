@@ -3,6 +3,11 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 import os
 
 from bot.keyboards.keyboards import get_main_keyboard, get_resell_menu, get_rental_menu, get_open_app_keyboard
+from bot.models.database import User
+from bot.models.init_db import db
+
+ADMIN_ID = 360028214
+
 
 router = Router()
 
@@ -53,3 +58,35 @@ async def menu_handler(message: Message):
         "Выберите действие:",
         reply_markup=get_open_app_keyboard()
     )
+
+
+@router.message(F.commands(['msg']))
+async def msg_handler(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer('Доступ запрещен!')
+        return
+    
+    parts = message.text.split(' ', 1)
+    if len(parts) < 2:
+        await message.answer('Используйте: /msg текст')
+        return
+    
+    text = parts[1]
+    await message.answer(f'Отправляю...')
+    
+    try:
+        async with db.session() as session:
+            users = await session.execute(db.select(User))
+            users = users.scalars().all()
+        
+        sent = 0
+        for user in users:
+            try:
+                await message.bot.send_message(user.telegram_id, f'Уведомление: {text}')
+                sent += 1
+            except:
+                pass
+        
+        await message.answer(f'Отправлено: {sent}')
+    except:
+        await message.answer('Ошибка!')
