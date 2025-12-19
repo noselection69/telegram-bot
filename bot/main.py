@@ -6,7 +6,7 @@ from pathlib import Path
 import ssl
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 from aiogram.fsm.storage.memory import MemoryStorage
 import threading
 
@@ -107,6 +107,25 @@ async def set_bot_commands(bot: Bot):
     await bot.set_my_commands(commands)
 
 
+async def set_menu_button(bot: Bot):
+    """Установить Menu Button с Web App"""
+    try:
+        # Получаем URL приложения из переменных окружения или используем по умолчанию
+        app_url = os.getenv('WEB_APP_URL', 'https://web-production-70ac2.up.railway.app')
+        
+        # Создаём Web App кнопку
+        menu_button = MenuButtonWebApp(
+            text="� Открыть приложение",
+            web_app=WebAppInfo(url=app_url)
+        )
+        
+        # Устанавливаем её как Menu Button
+        await bot.set_chat_menu_button(menu_button=menu_button)
+        logger.info(f"✅ Menu Button установлен: {app_url}")
+    except Exception as e:
+        logger.error(f"❌ Ошибка при установке Menu Button: {e}")
+
+
 async def main():
     """Главная функция"""
     # Логируем информацию о конфигурации
@@ -150,6 +169,9 @@ async def main():
     # Устанавливаем команды
     await set_bot_commands(bot)
     logger.info("Bot commands set")
+    
+    # Устанавливаем Menu Button
+    await set_menu_button(bot)
     
     # На production (Railway) используем HTTP без SSL
     # Railway автоматически добавляет HTTPS на уровне reverse proxy
