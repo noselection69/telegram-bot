@@ -881,3 +881,179 @@ header h1 {
     white-space: nowrap;
 }
 
+/* Стили для таймеров */
+.timers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.timer-btn {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    min-height: 150px;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.timer-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.timer-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.timer-icon {
+    font-size: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+}
+
+.timer-btn.active .timer-icon {
+    color: white;
+}
+
+.timer-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.timer-time {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent-color);
+    font-family: 'Courier New', monospace;
+}
+
+.timer-btn.active .timer-time {
+    color: white;
+}
+
+/* Активные таймеры */
+.active-timers-container {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+}
+
+.timers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.active-timer-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.active-timer-info {
+    flex: 1;
+}
+
+.active-timer-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.active-timer-display {
+    font-size: 24px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: var(--accent-color);
+    letter-spacing: 2px;
+}
+
+.timer-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--accent-color));
+    transition: width 0.3s linear;
+}
+
+.active-timer-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.timer-stop-btn {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.timer-stop-btn:hover {
+    background: #e53935;
+    transform: scale(1.05);
+}
+
+/* Форма добавления собственного таймера */
+#customTimerForm {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+#customTimerForm.hidden {
+    display: none;
+}
+
+/* Отступы между полями в форме таймеров */
+#customTimerForm .form-field {
+    margin-bottom: 12px;
+}
+
+#customTimerForm .form-field:last-of-type {
+    margin-bottom: 15px;
+}
+
+/* Кнопка добавления таймера */
+.btn-primary i {
+    margin-right: 8px;
+}
+
+

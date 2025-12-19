@@ -230,6 +230,52 @@ def rent_car():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/api/send-timer-notification', methods=['POST'])
+def send_timer_notification():
+    """API для отправки уведомления о завершении таймера в телеграм"""
+    try:
+        data = request.json
+        user_id = int(request.headers.get('X-User-ID', 0))
+        timer_name = data.get('timer_name', 'Таймер')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        async def process():
+            from bot.models.database import User
+            from bot.main import bot
+            
+            try:
+                # Получаем пользователя из БД
+                async with db.get_session() as session:
+                    result = await session.execute(
+                        select(User).where(User.telegram_id == user_id)
+                    )
+                    user = result.scalar_one_or_none()
+                
+                if user:
+                    # Отправляем сообщение в телеграм
+                    await bot.send_message(
+                        user.telegram_id,
+                        f'⏱️ <b>Таймер завершён!</b>\n\n'
+                        f'Таймер "<b>{timer_name}</b>" завершил обратный отсчёт.\n'
+                        f'⏰ <i>Пора действовать!</i>',
+                        parse_mode='HTML'
+                    )
+                    return {'success': True, 'message': 'Notification sent'}
+                else:
+                    return {'success': False, 'error': 'User not found'}
+            except Exception as e:
+                print(f'Error sending timer notification: {e}')
+                return {'success': False, 'error': str(e)}
+        
+        result = run_async(process())
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 def run_web_server(port=5000, cert_file=None, key_file=None):
     """Запустить веб-сервер с HTTPS"""
     ssl_context = None
@@ -237,3 +283,4 @@ def run_web_server(port=5000, cert_file=None, key_file=None):
         ssl_context = (cert_file, key_file)
     
     app.run(host='0.0.0.0', port=port, debug=False, ssl_context=ssl_context, use_reloader=False)
+

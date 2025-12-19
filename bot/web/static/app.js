@@ -1344,3 +1344,319 @@ function togglePlatinumVip() {
     .catch(err => console.error('Error:', err));
 }
 
+
+// ========== ТАЙМЕРЫ ==========
+
+// Объект для хранения активных таймеров
+let activeTimers = {};
+
+// Функция запуска таймера
+function startTimer(timerName, duration) {
+    // Если таймер уже запущен, не запускаем еще один
+    if (activeTimers[timerName]) {
+        showNotification(`⏱️ Таймер "${timerName}" уже запущен!`, 'warning');
+        return;
+    }
+    
+    const timerData = {
+        name: timerName,
+        duration: duration,
+        remaining: duration,
+        startTime: Date.now(),
+        endTime: Date.now() + (duration * 1000),
+        interval: null
+    };
+    
+    activeTimers[timerName] = timerData;
+    
+    // Показываем контейнер активных таймеров
+    document.getElementById('activeTimersContainer').classList.remove('hidden');
+    
+    // Отмечаем кнопку как активную
+    document.querySelectorAll('.timer-btn').forEach(btn => {
+        if (btn.dataset.timerName === timerName) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Показываем уведомление
+    showNotification(`⏱️ Запущен таймер "${timerName}"`, 'success');
+    
+    // Отрисовываем таймер
+    renderActiveTimer(timerName);
+    
+    // Начинаем обратный отсчет
+    startTimerCountdown(timerName);
+}
+
+// Функция для отрисовки активного таймера
+function renderActiveTimer(timerName) {
+    const timerData = activeTimers[timerName];
+    const listContainer = document.getElementById('activeTimersList');
+    
+    // Проверяем, есть ли уже элемент для этого таймера
+    let timerElement = document.getElementById(`timer-${timerName}`);
+    
+    if (!timerElement) {
+        timerElement = document.createElement('div');
+        timerElement.id = `timer-${timerName}`;
+        timerElement.className = 'active-timer-item';
+        timerElement.innerHTML = `
+            <div class="active-timer-info">
+                <div class="active-timer-name">${timerName}</div>
+                <div class="active-timer-display" id="timer-display-${timerName}">00:00:00</div>
+                <div class="timer-progress-bar">
+                    <div class="timer-progress-fill" id="timer-progress-${timerName}" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="active-timer-controls">
+                <button class="timer-stop-btn" onclick="stopTimer('${timerName}')">
+                    <i class="fas fa-stop-circle"></i> Стоп
+                </button>
+            </div>
+        `;
+        listContainer.appendChild(timerElement);
+    }
+}
+
+// Функция для обратного отсчета
+function startTimerCountdown(timerName) {
+    const timerData = activeTimers[timerName];
+    
+    // Если интервал уже существует, очищаем его
+    if (timerData.interval) {
+        clearInterval(timerData.interval);
+    }
+    
+    // Обновляем дисплей каждые 100ms для плавности
+    timerData.interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = timerData.endTime - now;
+        
+        if (remaining <= 0) {
+            // Таймер завершён
+            clearInterval(timerData.interval);
+            completeTimer(timerName);
+        } else {
+            // Обновляем оставшееся время
+            timerData.remaining = remaining;
+            updateTimerDisplay(timerName);
+        }
+    }, 100);
+}
+
+// Функция обновления отображения таймера
+function updateTimerDisplay(timerName) {
+    const timerData = activeTimers[timerName];
+    const remaining = timerData.remaining;
+    
+    // Конвертируем в часы, минуты, секунды
+    const totalSeconds = Math.ceil(remaining / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Форматируем строку времени
+    const timeString = [
+        String(hours).padStart(2, '0'),
+        String(minutes).padStart(2, '0'),
+        String(seconds).padStart(2, '0')
+    ].join(':');
+    
+    // Обновляем дисплей
+    const display = document.getElementById(`timer-display-${timerName}`);
+    if (display) {
+        display.textContent = timeString;
+    }
+    
+    // Обновляем прогресс бар
+    const progressBar = document.getElementById(`timer-progress-${timerName}`);
+    if (progressBar) {
+        const progress = (remaining / (timerData.duration * 1000)) * 100;
+        progressBar.style.width = Math.max(0, progress) + '%';
+    }
+}
+
+// Функция завершения таймера
+function completeTimer(timerName) {
+    const timerData = activeTimers[timerName];
+    
+    // Звуковое уведомление
+    playTimerSound();
+    
+    // Показываем уведомление
+    showNotification(`✅ Таймер "${timerName}" завершён!`, 'success');
+    
+    // Отправляем сообщение в телеграм
+    sendTimerNotificationToTelegram(timerName);
+    
+    // Удаляем из активных
+    delete activeTimers[timerName];
+    
+    // Удаляем элемент из DOM
+    const timerElement = document.getElementById(`timer-${timerName}`);
+    if (timerElement) {
+        timerElement.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => timerElement.remove(), 300);
+    }
+    
+    // Убираем активный статус кнопки
+    document.querySelectorAll('.timer-btn').forEach(btn => {
+        if (btn.dataset.timerName === timerName) {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Если нет активных таймеров, скрываем контейнер
+    if (Object.keys(activeTimers).length === 0) {
+        document.getElementById('activeTimersContainer').classList.add('hidden');
+    }
+}
+
+// Функция остановки таймера
+function stopTimer(timerName) {
+    if (activeTimers[timerName]) {
+        clearInterval(activeTimers[timerName].interval);
+        delete activeTimers[timerName];
+        
+        // Удаляем элемент из DOM
+        const timerElement = document.getElementById(`timer-${timerName}`);
+        if (timerElement) {
+            timerElement.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => timerElement.remove(), 300);
+        }
+        
+        // Убираем активный статус кнопки
+        document.querySelectorAll('.timer-btn').forEach(btn => {
+            if (btn.dataset.timerName === timerName) {
+                btn.classList.remove('active');
+            }
+        });
+        
+        showNotification(`⏹️ Таймер "${timerName}" остановлен`, 'info');
+        
+        // Если нет активных таймеров, скрываем контейнер
+        if (Object.keys(activeTimers).length === 0) {
+            document.getElementById('activeTimersContainer').classList.add('hidden');
+        }
+    }
+}
+
+// Функция для воспроизведения звука
+function playTimerSound() {
+    // Создаем звуковое уведомление через Web Audio API
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioContext.currentTime;
+        
+        // Создаем два бипа
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        
+        // Первый биз
+        osc1.frequency.setValueAtTime(800, now);
+        osc1.frequency.setValueAtTime(1000, now + 0.1);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.setValueAtTime(0, now + 0.2);
+        osc1.start(now);
+        osc1.stop(now + 0.2);
+        
+        // Второй биз (на 300ms позже)
+        osc2.frequency.setValueAtTime(1000, now + 0.3);
+        osc2.frequency.setValueAtTime(1200, now + 0.4);
+        gain2.gain.setValueAtTime(0.3, now + 0.3);
+        gain2.gain.setValueAtTime(0, now + 0.5);
+        osc2.start(now + 0.3);
+        osc2.stop(now + 0.5);
+    } catch(e) {
+        console.warn('Audio context not available:', e);
+    }
+}
+
+// Функция отправки уведомления в телеграм
+function sendTimerNotificationToTelegram(timerName) {
+    // Отправляем запрос к серверу для отправки сообщения в телеграм
+    fetch('/api/send-timer-notification', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userId
+        },
+        body: JSON.stringify({
+            timer_name: timerName
+        })
+    })
+    .catch(err => console.error('Error sending timer notification:', err));
+}
+
+// Функция показа формы создания собственного таймера
+function showCustomTimerForm() {
+    document.getElementById('customTimerForm').classList.remove('hidden');
+}
+
+// Функция скрытия формы создания собственного таймера
+function hideCustomTimerForm() {
+    document.getElementById('customTimerForm').classList.add('hidden');
+    // Очищаем поля
+    document.getElementById('customTimerName').value = '';
+    document.getElementById('customTimerHours').value = '0';
+    document.getElementById('customTimerMinutes').value = '5';
+    document.getElementById('customTimerSeconds').value = '0';
+}
+
+// Функция запуска собственного таймера
+function startCustomTimer() {
+    const name = document.getElementById('customTimerName').value.trim();
+    const hours = parseInt(document.getElementById('customTimerHours').value) || 0;
+    const minutes = parseInt(document.getElementById('customTimerMinutes').value) || 0;
+    const seconds = parseInt(document.getElementById('customTimerSeconds').value) || 0;
+    
+    // Проверяем валидность
+    if (!name) {
+        showNotification('❌ Введите название таймера', 'danger');
+        return;
+    }
+    
+    if (hours === 0 && minutes === 0 && seconds === 0) {
+        showNotification('❌ Установите время больше 0', 'danger');
+        return;
+    }
+    
+    if (activeTimers[name]) {
+        showNotification(`⏱️ Таймер "${name}" уже запущен!`, 'warning');
+        return;
+    }
+    
+    // Конвертируем в секунды
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    
+    // Скрываем форму
+    hideCustomTimerForm();
+    
+    // Запускаем таймер
+    startTimer(name, totalSeconds);
+}
+
+// Добавляем анимацию для выезда элемента
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+    }
+`;
+document.head.appendChild(style);
+
