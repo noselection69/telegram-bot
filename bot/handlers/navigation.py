@@ -1,6 +1,8 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import os
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.keyboards import get_main_keyboard, get_resell_menu, get_rental_menu, get_open_app_keyboard
 from bot.models.database import User
@@ -75,9 +77,10 @@ async def msg_handler(message: Message):
     await message.answer(f'Отправляю...')
     
     try:
-        async with db.session() as session:
-            users = await session.execute(db.select(User))
-            users = users.scalars().all()
+        session = db.get_session()
+        async with session() as s:
+            result = await s.execute(select(User))
+            users = result.scalars().all()
         
         sent = 0
         for user in users:
@@ -88,5 +91,5 @@ async def msg_handler(message: Message):
                 pass
         
         await message.answer(f'Отправлено: {sent}')
-    except:
-        await message.answer('Ошибка!')
+    except Exception as e:
+        await message.answer(f'Ошибка: {str(e)}')
