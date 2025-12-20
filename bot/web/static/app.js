@@ -1704,20 +1704,33 @@ document.head.appendChild(style);
 
 // ========== ГАЙДЫ ==========
 
-function toggleAnswer(btn) {
-    const answerContainer = btn.parentElement.querySelector('.answer-container');
+function toggleGuideSection(btn) {
+    const content = btn.parentElement.querySelector('.guide-section-content');
     
-    // Если уже развернут, скрываем
-    if (answerContainer.classList.contains('hidden')) {
-        answerContainer.classList.remove('hidden');
+    // Если закрыта, открываем
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
         btn.classList.add('expanded');
     } else {
-        answerContainer.classList.add('hidden');
+        content.classList.add('hidden');
         btn.classList.remove('expanded');
     }
 }
 
-// Обработчик переключения подвкладок гайдов
+function toggleAnswer(btn) {
+    const answerContainer = btn.parentElement.querySelector('.answer-container');
+    
+    // Если закрыта, открываем
+    if (!answerContainer.classList.contains('show')) {
+        answerContainer.classList.add('show');
+        btn.classList.add('expanded');
+    } else {
+        answerContainer.classList.remove('show');
+        btn.classList.remove('expanded');
+    }
+}
+
+// Обработчик переключения подвкладок гайдов (если будут в будущем)
 document.addEventListener('DOMContentLoaded', function() {
     const guideBtns = document.querySelectorAll('.guide-btn');
     guideBtns.forEach(btn => {
