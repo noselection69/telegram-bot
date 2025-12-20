@@ -1721,11 +1721,11 @@ function toggleAnswer(btn) {
     const answerContainer = btn.parentElement.querySelector('.answer-container');
     
     // Если закрыта, открываем
-    if (!answerContainer.classList.contains('show')) {
-        answerContainer.classList.add('show');
+    if (answerContainer.classList.contains('hidden')) {
+        answerContainer.classList.remove('hidden');
         btn.classList.add('expanded');
     } else {
-        answerContainer.classList.remove('show');
+        answerContainer.classList.add('hidden');
         btn.classList.remove('expanded');
     }
 }
