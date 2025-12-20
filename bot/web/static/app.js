@@ -1702,3 +1702,39 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// ========== ГАЙДЫ ==========
+
+function toggleAnswer(btn) {
+    const answerContainer = btn.parentElement.querySelector('.answer-container');
+    
+    // Если уже развернут, скрываем
+    if (answerContainer.classList.contains('hidden')) {
+        answerContainer.classList.remove('hidden');
+        btn.classList.add('expanded');
+    } else {
+        answerContainer.classList.add('hidden');
+        btn.classList.remove('expanded');
+    }
+}
+
+// Обработчик переключения подвкладок гайдов
+document.addEventListener('DOMContentLoaded', function() {
+    const guideBtns = document.querySelectorAll('.guide-btn');
+    guideBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const guideId = this.getAttribute('data-guide');
+            
+            // Снимаем active со всех кнопок и скрываем все контенты
+            document.querySelectorAll('.guide-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.guide-content').forEach(c => c.classList.remove('active'));
+            
+            // Добавляем active к текущей кнопке и показываем контент
+            this.classList.add('active');
+            const guideContent = document.getElementById(guideId);
+            if (guideContent) {
+                guideContent.classList.add('active');
+            }
+        });
+    });
+});
+
