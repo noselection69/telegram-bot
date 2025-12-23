@@ -73,6 +73,7 @@ class Car(Base):
     name = Column(String(255), nullable=False)
     cost = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)  # Soft delete flag
     
     user = relationship("User", back_populates="cars")
     rentals = relationship("Rental", back_populates="car", cascade="all, delete-orphan")

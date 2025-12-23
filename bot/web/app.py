@@ -543,7 +543,7 @@ def get_cars():
                     'cars': []
                 })
             
-            cars = session.query(Car).filter(Car.user_id == user.id).all()
+            cars = session.query(Car).filter(Car.user_id == user.id, Car.is_deleted == False).all()
             
             cars_list = []
             for car in cars:
@@ -913,7 +913,7 @@ def edit_rental(rental_id):
 
 @app.route('/api/delete-car/<int:car_id>', methods=['DELETE'])
 def delete_car(car_id):
-    """Удалить автомобиль"""
+    """Удалить автомобиль (soft delete - скрываем, но не удаляем)"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         
@@ -931,7 +931,8 @@ def delete_car(car_id):
             if not user or car.user_id != user.id:
                 return jsonify({'success': False, 'error': 'Unauthorized'}), 403
             
-            session.delete(car)
+            # Soft delete - просто помечаем как удалённую
+            car.is_deleted = True
             session.commit()
             
             return jsonify({'success': True, 'message': 'Машина удалена'})
