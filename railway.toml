@@ -3,7 +3,7 @@ builder = "dockerfile"
 
 [deploy]
 numReplicas = 1
-startCommand = "python -m bot.main"
+startCommand = "python emergency_fix.py && python seed_bp_tasks.py && python migrate_postgresql.py && python run_migration.py && python -m bot.main"
 restartPolicyMaxRetries = 5
 
 [[volumes]]
