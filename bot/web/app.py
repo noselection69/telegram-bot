@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from sqlalchemy import create_engine, text, or_
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum, BPTask, BPCompletion
 from bot.utils.datetime_helper import get_moscow_now
@@ -543,11 +543,11 @@ def get_cars():
                     'cars': []
                 })
             
-            # Фильтруем удалённые машины (is_deleted=False или NULL для старых записей)
-            cars = session.query(Car).filter(
-                Car.user_id == user.id,
-                or_(Car.is_deleted == False, Car.is_deleted == None)
-            ).all()
+            # Получаем все машины пользователя
+            all_cars = session.query(Car).filter(Car.user_id == user.id).all()
+            
+            # Фильтруем удалённые (is_deleted=True) на уровне Python для совместимости
+            cars = [c for c in all_cars if not getattr(c, 'is_deleted', False)]
             
             cars_list = []
             for car in cars:
@@ -850,11 +850,9 @@ def get_rental_stats():
             # Сортируем по доходу (по убыванию)
             cars_list = sorted(cars_stats.values(), key=lambda x: x['total_income'], reverse=True)
             
-            # Количество машин (без удалённых)
-            cars_count = session.query(Car).filter(
-                Car.user_id == user.id,
-                or_(Car.is_deleted == False, Car.is_deleted == None)
-            ).count()
+            # Количество машин (без удалённых) - безопасный подсчёт
+            all_user_cars = session.query(Car).filter(Car.user_id == user.id).all()
+            cars_count = len([c for c in all_user_cars if not getattr(c, 'is_deleted', False)])
             
             return jsonify({
                 'success': True,
