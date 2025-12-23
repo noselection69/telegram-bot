@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, or_
 from sqlalchemy.orm import sessionmaker
 from bot.models.database import User, Item, Car, Sale, Rental, BuyPrice, CategoryEnum, BPTask, BPCompletion
 from bot.utils.datetime_helper import get_moscow_now
@@ -543,7 +543,11 @@ def get_cars():
                     'cars': []
                 })
             
-            cars = session.query(Car).filter(Car.user_id == user.id, Car.is_deleted == False).all()
+            # Фильтруем удалённые машины (is_deleted=False или NULL для старых записей)
+            cars = session.query(Car).filter(
+                Car.user_id == user.id,
+                or_(Car.is_deleted == False, Car.is_deleted == None)
+            ).all()
             
             cars_list = []
             for car in cars:
@@ -846,8 +850,11 @@ def get_rental_stats():
             # Сортируем по доходу (по убыванию)
             cars_list = sorted(cars_stats.values(), key=lambda x: x['total_income'], reverse=True)
             
-            # Количество машин
-            cars_count = session.query(Car).filter(Car.user_id == user.id).count()
+            # Количество машин (без удалённых)
+            cars_count = session.query(Car).filter(
+                Car.user_id == user.id,
+                or_(Car.is_deleted == False, Car.is_deleted == None)
+            ).count()
             
             return jsonify({
                 'success': True,
