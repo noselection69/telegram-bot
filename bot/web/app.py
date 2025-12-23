@@ -543,11 +543,8 @@ def get_cars():
                     'cars': []
                 })
             
-            # Получаем все машины пользователя
-            all_cars = session.query(Car).filter(Car.user_id == user.id).all()
-            
-            # Фильтруем удалённые (is_deleted=True) на уровне Python для совместимости
-            cars = [c for c in all_cars if not getattr(c, 'is_deleted', False)]
+            # Получаем все машины пользователя (без фильтрации is_deleted для совместимости)
+            cars = session.query(Car).filter(Car.user_id == user.id).all()
             
             cars_list = []
             for car in cars:
@@ -850,9 +847,8 @@ def get_rental_stats():
             # Сортируем по доходу (по убыванию)
             cars_list = sorted(cars_stats.values(), key=lambda x: x['total_income'], reverse=True)
             
-            # Количество машин (без удалённых) - безопасный подсчёт
-            all_user_cars = session.query(Car).filter(Car.user_id == user.id).all()
-            cars_count = len([c for c in all_user_cars if not getattr(c, 'is_deleted', False)])
+            # Количество машин
+            cars_count = session.query(Car).filter(Car.user_id == user.id).count()
             
             return jsonify({
                 'success': True,
@@ -936,8 +932,8 @@ def delete_car(car_id):
             if not user or car.user_id != user.id:
                 return jsonify({'success': False, 'error': 'Unauthorized'}), 403
             
-            # Soft delete - просто помечаем как удалённую
-            car.is_deleted = True
+            # Обычное удаление (статистика аренды удалится вместе с машиной)
+            session.delete(car)
             session.commit()
             
             return jsonify({'success': True, 'message': 'Машина удалена'})
