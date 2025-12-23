@@ -1203,12 +1203,17 @@ function renderRentalChart(chartData, timeFilter) {
                        timeFilter === 'week' ? 'Доход по дням (неделя)' : 
                        'Доход за последние 30 дней';
     
-    // Определяем цвета в зависимости от темы
-    const isDark = document.body.classList.contains('dark-theme') || 
-                   window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Определяем цвета - берём из CSS переменных или используем контрастные цвета
+    const computedStyle = getComputedStyle(document.body);
+    const bgColor = computedStyle.getPropertyValue('--bg-primary').trim();
     
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-    const textColor = isDark ? '#e0e0e0' : '#333';
+    // Если фон тёмный - используем светлый текст, иначе тёмный
+    const isDark = bgColor.includes('26') || bgColor.includes('30') || bgColor.includes('rgb(26') || 
+                   document.body.style.backgroundColor?.includes('26') ||
+                   window.Telegram?.WebApp?.colorScheme === 'dark';
+    
+    const textColor = isDark ? '#ffffff' : '#1a1a1a';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
     
     rentalChartInstance = new Chart(ctx, {
         type: 'bar',
