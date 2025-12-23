@@ -1174,6 +1174,9 @@ function loadRentalStats() {
                 </div>
             `;
             statsContent.innerHTML = content;
+            
+            // Отрисовываем график
+            renderRentalChart(data.chart_data, timeFilter);
         } else {
             statsContent.innerHTML = '<p class="error">Ошибка загрузки</p>';
         }
@@ -1181,6 +1184,97 @@ function loadRentalStats() {
     .catch(e => {
         console.error('Error loading rental stats:', e);
         statsContent.innerHTML = '<p class="error">Ошибка загрузки</p>';
+    });
+}
+
+// График доходов аренды
+let rentalChartInstance = null;
+
+function renderRentalChart(chartData, timeFilter) {
+    const ctx = document.getElementById('rentalChart');
+    if (!ctx) return;
+    
+    // Уничтожаем предыдущий график если есть
+    if (rentalChartInstance) {
+        rentalChartInstance.destroy();
+    }
+    
+    const chartTitle = timeFilter === 'day' ? 'Доход по часам' : 
+                       timeFilter === 'week' ? 'Доход по дням (неделя)' : 
+                       'Доход за последние 30 дней';
+    
+    // Определяем цвета в зависимости от темы
+    const isDark = document.body.classList.contains('dark-theme') || 
+                   window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const textColor = isDark ? '#e0e0e0' : '#333';
+    
+    rentalChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Доход ($)',
+                data: chartData.values,
+                backgroundColor: 'rgba(76, 175, 80, 0.7)',
+                borderColor: 'rgba(76, 175, 80, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: chartTitle,
+                    color: textColor,
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return formatPrice(context.raw) + '$';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor,
+                        callback: function(value) {
+                            return formatPrice(value) + '$';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: textColor,
+                        maxRotation: 45,
+                        minRotation: 0,
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 

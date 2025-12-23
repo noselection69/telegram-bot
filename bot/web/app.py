@@ -799,7 +799,8 @@ def get_rental_stats():
                     'total_cars': 0,
                     'total_rentals': 0,
                     'total_income': 0,
-                    'cars_stats': []
+                    'cars_stats': [],
+                    'chart_data': {'labels': [], 'values': []}
                 })
             
             # Получаем все аренды пользователя
@@ -850,13 +851,70 @@ def get_rental_stats():
             # Количество машин
             cars_count = session.query(Car).filter(Car.user_id == user.id).count()
             
+            # === ДАННЫЕ ДЛЯ ГРАФИКА ===
+            # Группируем доходы по дням за последние 7 дней (или за выбранный период)
+            chart_data = {'labels': [], 'values': []}
+            
+            if time_filter == 'day':
+                # Для дня - показываем по часам
+                hours_income = {}
+                for rental in filtered_rentals:
+                    if rental.rental_start:
+                        hour_key = rental.rental_start.strftime('%H:00')
+                        income = float(rental.price_per_hour) * rental.hours
+                        hours_income[hour_key] = hours_income.get(hour_key, 0) + income
+                
+                # Заполняем все часы дня
+                for h in range(24):
+                    hour_label = f'{h:02d}:00'
+                    chart_data['labels'].append(hour_label)
+                    chart_data['values'].append(hours_income.get(hour_label, 0))
+                    
+            elif time_filter == 'week':
+                # Для недели - по дням
+                days_income = {}
+                day_names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+                
+                for rental in filtered_rentals:
+                    if rental.rental_start:
+                        day_key = rental.rental_start.strftime('%Y-%m-%d')
+                        income = float(rental.price_per_hour) * rental.hours
+                        days_income[day_key] = days_income.get(day_key, 0) + income
+                
+                # Заполняем последние 7 дней
+                for i in range(6, -1, -1):
+                    day = now - timedelta(days=i)
+                    day_key = day.strftime('%Y-%m-%d')
+                    day_name = day_names[day.weekday()]
+                    day_label = f"{day_name} {day.strftime('%d.%m')}"
+                    chart_data['labels'].append(day_label)
+                    chart_data['values'].append(days_income.get(day_key, 0))
+                    
+            else:  # all - за всё время по месяцам или по дням (последние 30 дней)
+                days_income = {}
+                
+                for rental in filtered_rentals:
+                    if rental.rental_start:
+                        day_key = rental.rental_start.strftime('%Y-%m-%d')
+                        income = float(rental.price_per_hour) * rental.hours
+                        days_income[day_key] = days_income.get(day_key, 0) + income
+                
+                # Показываем последние 30 дней
+                for i in range(29, -1, -1):
+                    day = now - timedelta(days=i)
+                    day_key = day.strftime('%Y-%m-%d')
+                    day_label = day.strftime('%d.%m')
+                    chart_data['labels'].append(day_label)
+                    chart_data['values'].append(days_income.get(day_key, 0))
+            
             return jsonify({
                 'success': True,
                 'total_cars': cars_count,
                 'total_rentals': total_rentals,
                 'total_income': total_income,
                 'time_filter': time_filter,
-                'cars_stats': cars_list
+                'cars_stats': cars_list,
+                'chart_data': chart_data
             })
         finally:
             session.close()
