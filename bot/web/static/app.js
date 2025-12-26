@@ -242,53 +242,9 @@ async function submitAddItem(event) {
 }
 
 async function loadItems() {
-    try {
-        console.log('Загрузка товаров для пользователя:', userId);
-        
-        const response = await fetch('/api/get-items', {
-            headers: {
-                'X-User-ID': userId
-            }
-        });
-        
-        console.log('Статус ответа:', response.status);
-        const data = await response.json();
-        console.log('Данные ответа:', data);
-        
-        if (data.success && data.items.length > 0) {
-            // Показываем только ПРОДАННЫЕ товары (история продаж)
-            const soldItems = data.items.filter(item => item.sold);
-            
-            if (soldItems.length > 0) {
-                document.getElementById('itemsList').innerHTML = soldItems.map(item => `
-                    <div class="item-card">
-                        <div class="item-header">
-                            <h4>${item.name}</h4>
-                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
-                        </div>
-                        <span class="badge sold"><i class="fas fa-check"></i> Продано</span>
-                        <p class="item-category"><i class="fas fa-folder"></i> ${item.category}</p>
-                        <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(item.price)}$</p>
-                    </div>
-                `).join('');
-            } else {
-                document.getElementById('itemsList').innerHTML = `
-                    <div class="empty">
-                        <p>� История продаж пуста</p>
-                    </div>
-                `;
-            }
-        } else if (data.success) {
-            // Товары не добавлены или ошибка загрузки - просто очищаем список
-            document.getElementById('itemsList').innerHTML = '';
-        } else {
-            // Ошибка API
-            document.getElementById('itemsList').innerHTML = `<div class="empty">⚠️ Ошибка загрузки: ${data.error || 'Неизвестная ошибка'}</div>`;
-        }
-    } catch (error) {
-        console.error('Error loading items:', error);
-        document.getElementById('itemsList').innerHTML = `<div class="empty">⚠️ Ошибка загрузки</div>`;
-    }
+    // Функция больше не используется - список товаров на главной удалён
+    // Все товары теперь отображаются в подвкладках (Инвентарь, История продаж)
+    return;
 }
 
 function sellItem(itemId) {
