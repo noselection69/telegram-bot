@@ -1522,6 +1522,49 @@ def admin_reset_bp_tasks():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+# === УВЕДОМЛЕНИЯ ТАЙМЕРОВ ===
+
+@app.route('/api/send-timer-notification', methods=['POST'])
+def send_timer_notification():
+    """Отправить уведомление в Telegram о завершении таймера"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        data = request.json
+        timer_name = data.get('timer_name', 'Таймер')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        # Получаем токен бота
+        bot_token = os.getenv('BOT_TOKEN')
+        if not bot_token:
+            logger.warning("BOT_TOKEN not set, cannot send timer notification")
+            return jsonify({'success': False, 'error': 'Bot token not configured'}), 500
+        
+        # Отправляем сообщение через Telegram API
+        import requests
+        
+        message = f"⏰ Таймер \"{timer_name}\" завершён!"
+        
+        telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        response = requests.post(telegram_url, json={
+            'chat_id': user_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }, timeout=10)
+        
+        if response.status_code == 200:
+            logger.info(f"Timer notification sent to user {user_id}: {timer_name}")
+            return jsonify({'success': True})
+        else:
+            logger.error(f"Failed to send timer notification: {response.text}")
+            return jsonify({'success': False, 'error': 'Failed to send message'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error sending timer notification: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 def run_web_server(port=5000, cert_file=None, key_file=None):
     """Запустить веб-сервер с HTTPS"""
     try:
