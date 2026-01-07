@@ -708,7 +708,7 @@ async function loadPurchases() {
                 <div class="item-card">
                     <div class="item-header">
                         <h4><i class="fas fa-box"></i> ${p.item_name}</h4>
-                        <button class="delete-btn" onclick="deletePurchase(${p.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
+                        ${p.can_delete ? `<button class="delete-btn" onclick="deletePurchase(${p.id})" title="Удалить"><i class="fas fa-xmark"></i></button>` : ''}
                     </div>
                     <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(p.price)}$</p>
                     <p class="small" style="color: var(--text-secondary); margin-top: 4px;"><i class="fas fa-calendar"></i> ${p.created_at}</p>

@@ -1063,9 +1063,11 @@ def delete_item(item_id):
 
 # === СКУП (ИСТОРИЯ ЗАКУПОК) ===
 
+ADMIN_TELEGRAM_ID = 360028214  # ID администратора
+
 @app.route('/api/get-purchases', methods=['GET'])
 def get_purchases():
-    """Получить историю закупок пользователя"""
+    """Получить общую историю закупок всех пользователей"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         
@@ -1074,21 +1076,17 @@ def get_purchases():
         
         session = SessionLocal()
         try:
-            user = session.query(User).filter(User.telegram_id == user_id).first()
-            
-            if not user:
-                return jsonify({
-                    'success': True,
-                    'purchases': [],
-                    'total': 0
-                })
-            
-            # Получаем все закупки пользователя, отсортированные по дате (новые первыми)
-            purchases = session.query(BuyPrice).filter(
-                BuyPrice.user_id == user.id
-            ).order_by(BuyPrice.created_at.desc()).all()
+            # Получаем ВСЕ закупки всех пользователей, отсортированные по дате (новые первыми)
+            purchases = session.query(BuyPrice).order_by(BuyPrice.created_at.desc()).all()
             
             total = sum(p.price for p in purchases)
+            
+            # Проверяем, является ли текущий пользователь админом
+            is_admin = (user_id == ADMIN_TELEGRAM_ID)
+            
+            # Получаем текущего пользователя для проверки авторства
+            current_user = session.query(User).filter(User.telegram_id == user_id).first()
+            current_user_id = current_user.id if current_user else None
             
             return jsonify({
                 'success': True,
@@ -1098,7 +1096,8 @@ def get_purchases():
                         'item_name': p.item_name,
                         'price': p.price,
                         'price_text': p.price_text,
-                        'created_at': p.created_at.strftime('%d.%m.%Y %H:%M') if p.created_at else ''
+                        'created_at': p.created_at.strftime('%d.%m.%Y %H:%M') if p.created_at else '',
+                        'can_delete': is_admin or (current_user_id and p.user_id == current_user_id)
                     }
                     for p in purchases
                 ],
@@ -1113,7 +1112,7 @@ def get_purchases():
 
 @app.route('/api/delete-purchase/<int:purchase_id>', methods=['DELETE'])
 def delete_purchase(purchase_id):
-    """Удалить запись из скупа"""
+    """Удалить запись из скупа (только автор или админ)"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         
@@ -1126,13 +1125,17 @@ def delete_purchase(purchase_id):
             if not user:
                 return jsonify({'success': False, 'error': 'User not found'}), 404
             
-            purchase = session.query(BuyPrice).filter(
-                BuyPrice.id == purchase_id,
-                BuyPrice.user_id == user.id
-            ).first()
+            purchase = session.query(BuyPrice).filter(BuyPrice.id == purchase_id).first()
             
             if not purchase:
                 return jsonify({'success': False, 'error': 'Purchase not found'}), 404
+            
+            # Проверяем права: автор или админ
+            is_admin = (user_id == ADMIN_TELEGRAM_ID)
+            is_owner = (purchase.user_id == user.id)
+            
+            if not is_admin and not is_owner:
+                return jsonify({'success': False, 'error': 'Нет прав на удаление'}), 403
             
             session.delete(purchase)
             session.commit()
