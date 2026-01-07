@@ -271,7 +271,7 @@ async function submitSellItem(itemId, salePrice) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(`<i class="fas fa-check"></i> ${result.message}\n<i class="fas fa-coins"></i> Прибыль: ${result.profit}$`, 'success');
+            showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}$`, 'success');
             loadInventory();
         } else {
             showNotification(result.error, 'error');
@@ -737,7 +737,7 @@ async function deletePurchase(purchaseId) {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('<i class="fas fa-check"></i> Запись удалена', 'success');
+            showNotification('✅ Запись удалена', 'success');
             loadPurchases();
         } else {
             showNotification(data.error || 'Ошибка удаления', 'error');
