@@ -614,16 +614,16 @@ async function loadInventory() {
             
             if (unsoldItems.length > 0) {
                 inventoryList.innerHTML = unsoldItems.map(item => `
-                    <div class="item-card">
-                        <div class="item-header">
-                            <h4>${item.name}</h4>
-                            <button class="delete-btn" onclick="deleteItem(${item.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
-                        </div>
-                        <span class="badge unsold"><i class="fas fa-hourglass-end"></i> В наличии</span>
-                        <p class="item-category"><i class="fas fa-folder"></i> ${item.category}</p>
-                        <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(item.price)}$</p>
-                        <div class="btn-group">
-                            <button class="btn btn-small" onclick="openSaleModal(${item.id}, '${item.name}', ${item.price})"><i class="fas fa-receipt"></i> Продать</button>
+                    <div class="inventory-item">
+                        <div class="inventory-item-main">
+                            <div class="inventory-item-info">
+                                <span class="inventory-item-name">${item.name}</span>
+                                <span class="inventory-item-details">${item.category} • ${formatPrice(item.price)}$</span>
+                            </div>
+                            <div class="inventory-item-actions">
+                                <button class="btn-sell-compact" onclick="openSaleModal(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price})">Продать</button>
+                                <button class="btn-delete-compact" onclick="deleteItem(${item.id})"><i class="fas fa-xmark"></i></button>
+                            </div>
                         </div>
                     </div>
                 `).join('');
