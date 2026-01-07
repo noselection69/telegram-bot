@@ -82,6 +82,9 @@
                 <!-- Инвентарь -->
                 <div id="inventoryView" class="view hidden">
                     <h3><i class="fas fa-clipboard-list"></i> Ваш инвентарь</h3>
+                    <div class="search-box" style="margin-bottom: 12px;">
+                        <input type="text" id="inventorySearch" placeholder="🔍 Поиск по названию..." oninput="searchInventory()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                    </div>
                     <div id="inventoryList" class="items-list">
                         <p class="loading">Загрузка...</p>
                     </div>

@@ -644,6 +644,16 @@ async function loadInventory() {
     }
 }
 
+function searchInventory() {
+    const query = document.getElementById('inventorySearch').value.toLowerCase();
+    const items = document.getElementById('inventoryList').querySelectorAll('.inventory-item');
+    
+    items.forEach(item => {
+        const name = item.querySelector('.inventory-item-name')?.textContent.toLowerCase() || '';
+        item.style.display = name.includes(query) ? 'block' : 'none';
+    });
+}
+
 function showStatistics() {
     closeAllPopups();
     const stats = document.getElementById('statisticsView');
