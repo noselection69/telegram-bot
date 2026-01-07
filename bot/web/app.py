@@ -633,13 +633,15 @@ def get_items():
 
 @app.route('/api/get-sales', methods=['GET'])
 def get_sales():
-    """Получить историю продаж с фильтрацией"""
+    """Получить историю продаж с фильтрацией и пагинацией"""
     try:
         user_id = int(request.headers.get('X-User-ID', 0))
         time_filter = request.args.get('time_filter', 'all')  # day, week, all
         deal_filter = request.args.get('deal_filter', 'all')  # best, worst, all
+        page = int(request.args.get('page', 1))  # Номер страницы
+        per_page = int(request.args.get('per_page', 15))  # Элементов на странице
         
-        logger.info(f"📊 Statistics request: user_id={user_id}, time_filter={time_filter}, deal_filter={deal_filter}")
+        logger.info(f"📊 Statistics request: user_id={user_id}, time_filter={time_filter}, deal_filter={deal_filter}, page={page}")
         
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
@@ -654,7 +656,9 @@ def get_sales():
                     'sales': [],
                     'total_income': 0,
                     'total_profit': 0,
-                    'total_sales': 0
+                    'total_sales': 0,
+                    'page': 1,
+                    'total_pages': 0
                 })
             
             # Получаем все продажи для товаров пользователя
@@ -685,14 +689,24 @@ def get_sales():
                 sales = [s for s in sales if s.sale_date and 
                         week_ago_naive <= s.sale_date.replace(tzinfo=None) <= now_naive]
             
-            # Сортируем по типу сделок
+            # Сортируем по типу сделок или по дате (по умолчанию новые первые)
             if deal_filter == 'best':
                 sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price), reverse=True)
             elif deal_filter == 'worst':
                 sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price))
+            else:
+                # По умолчанию сортируем по дате (новые первые)
+                sales = sorted(sales, key=lambda s: s.sale_date if s.sale_date else datetime.min, reverse=True)
             
             total_income = sum(float(sale.sale_price) for sale in sales)
             total_profit = sum(float(sale.sale_price) - float(sale.item.purchase_price) for sale in sales)
+            total_count = len(sales)
+            
+            # Пагинация
+            total_pages = (total_count + per_page - 1) // per_page  # Округление вверх
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            paginated_sales = sales[start_idx:end_idx]
             
             return jsonify({
                 'success': True,
@@ -705,11 +719,14 @@ def get_sales():
                         'profit': float(sale.sale_price) - float(sale.item.purchase_price),
                         'created_at': sale.sale_date.isoformat() if sale.sale_date else None
                     }
-                    for sale in sales
+                    for sale in paginated_sales
                 ],
                 'total_income': total_income,
                 'total_profit': total_profit,
-                'total_sales': len(sales)
+                'total_sales': total_count,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': total_pages
             })
         finally:
             session.close()

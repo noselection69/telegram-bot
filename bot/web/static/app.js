@@ -843,10 +843,20 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
 }
 
 function loadHistory() {
+    loadHistoryPage(1);
+}
+
+// Текущая страница истории
+let currentHistoryPage = 1;
+let totalHistoryPages = 1;
+
+function loadHistoryPage(page) {
     const historyList = document.getElementById('historyList');
     historyList.innerHTML = '<p class="loading">Загрузка истории...</p>';
     
-    fetch('/api/get-sales', {
+    currentHistoryPage = page;
+    
+    fetch(`/api/get-sales?page=${page}&per_page=15`, {
         headers: {
             'X-User-ID': userId
         }
@@ -854,7 +864,9 @@ function loadHistory() {
     .then(r => r.json())
     .then(data => {
         if (data.success && data.sales.length > 0) {
-            historyList.innerHTML = data.sales.map(sale => `
+            totalHistoryPages = data.total_pages;
+            
+            let html = data.sales.map(sale => `
                 <div class="item-card">
                     <h4>${sale.item_name}</h4>
                     <p><i class="fas fa-receipt"></i> Продано за: <strong>${formatPrice(sale.sale_price)}$</strong></p>
@@ -865,6 +877,13 @@ function loadHistory() {
                     <p class="small"><i class="fas fa-calendar"></i> ${new Date(sale.created_at).toLocaleString('ru-RU')}</p>
                 </div>
             `).join('');
+            
+            // Добавляем пагинацию если страниц больше 1
+            if (totalHistoryPages > 1) {
+                html += renderHistoryPagination();
+            }
+            
+            historyList.innerHTML = html;
         } else {
             historyList.innerHTML = '<p class="empty">История продаж пуста</p>';
         }
@@ -873,6 +892,57 @@ function loadHistory() {
         console.error('Error loading history:', e);
         historyList.innerHTML = '<p class="error">Ошибка загрузки</p>';
     });
+}
+
+function renderHistoryPagination() {
+    let paginationHtml = '<div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 16px; flex-wrap: wrap;">';
+    
+    // Кнопка "Назад"
+    if (currentHistoryPage > 1) {
+        paginationHtml += `<button class="pagination-btn" onclick="loadHistoryPage(${currentHistoryPage - 1})" style="padding: 8px 12px; background: var(--bg-tertiary); border: none; border-radius: 8px; color: var(--text-primary); cursor: pointer;">
+            <i class="fas fa-chevron-left"></i>
+        </button>`;
+    }
+    
+    // Номера страниц
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentHistoryPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalHistoryPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+        paginationHtml += `<button class="pagination-btn" onclick="loadHistoryPage(1)" style="padding: 8px 12px; background: var(--bg-tertiary); border: none; border-radius: 8px; color: var(--text-primary); cursor: pointer;">1</button>`;
+        if (startPage > 2) {
+            paginationHtml += `<span style="color: var(--text-secondary);">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentHistoryPage;
+        paginationHtml += `<button class="pagination-btn${isActive ? ' active' : ''}" onclick="loadHistoryPage(${i})" style="padding: 8px 12px; background: ${isActive ? 'var(--accent-color)' : 'var(--bg-tertiary)'}; border: none; border-radius: 8px; color: ${isActive ? 'white' : 'var(--text-primary)'}; cursor: pointer; font-weight: ${isActive ? '600' : '400'};">${i}</button>`;
+    }
+    
+    if (endPage < totalHistoryPages) {
+        if (endPage < totalHistoryPages - 1) {
+            paginationHtml += `<span style="color: var(--text-secondary);">...</span>`;
+        }
+        paginationHtml += `<button class="pagination-btn" onclick="loadHistoryPage(${totalHistoryPages})" style="padding: 8px 12px; background: var(--bg-tertiary); border: none; border-radius: 8px; color: var(--text-primary); cursor: pointer;">${totalHistoryPages}</button>`;
+    }
+    
+    // Кнопка "Вперед"
+    if (currentHistoryPage < totalHistoryPages) {
+        paginationHtml += `<button class="pagination-btn" onclick="loadHistoryPage(${currentHistoryPage + 1})" style="padding: 8px 12px; background: var(--bg-tertiary); border: none; border-radius: 8px; color: var(--text-primary); cursor: pointer;">
+            <i class="fas fa-chevron-right"></i>
+        </button>`;
+    }
+    
+    paginationHtml += '</div>';
+    paginationHtml += `<p style="text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 8px;">Страница ${currentHistoryPage} из ${totalHistoryPages}</p>`;
+    
+    return paginationHtml;
 }
 
 // === АРЕНДА ===
