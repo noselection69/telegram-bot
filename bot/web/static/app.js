@@ -146,10 +146,10 @@ function switchTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Закрываем все popup view'ы (статистика, история, цены скупа и т.д.)
+    // Закрываем все popup view'ы (статистика, история, скуп и т.д.)
     document.getElementById('statisticsView')?.classList.add('hidden');
     document.getElementById('historyView')?.classList.add('hidden');
-    document.getElementById('buyPricesView')?.classList.add('hidden');
+    document.getElementById('purchasesView')?.classList.add('hidden');
     document.getElementById('addItemForm')?.classList.add('hidden');
     
     // Удаляем активный класс со всех кнопок
@@ -179,7 +179,8 @@ function closeAllPopups() {
         'addCarForm',
         'statisticsView',
         'historyView',
-        'buyPricesView',
+        'purchasesView',
+        'inventoryView',
         'rentalModal',
         'carsView',
         'rentalStatsView',
@@ -667,177 +668,68 @@ function hideHistory() {
     document.getElementById('historyView').classList.add('hidden');
 }
 
-// === ЦЕНЫ СКУПА ===
+// === СКУП (ИСТОРИЯ ЗАКУПОК) ===
 
-function enableBuyPriceInputs() {
-    const nameInput = document.getElementById('itemNameInput');
-    const priceInput = document.getElementById('itemPriceInput');
-    
-    if (nameInput) {
-        // Убираем все блокирующие атрибуты и стили
-        nameInput.disabled = false;
-        nameInput.readOnly = false;
-        nameInput.setAttribute('aria-disabled', 'false');
-        
-        // Очищаем все блокирующие стили
-        nameInput.style.pointerEvents = 'auto';
-        nameInput.style.opacity = '1';
-        nameInput.style.cursor = 'text';
-        nameInput.style.userSelect = 'auto';
-        nameInput.style.WebkitUserSelect = 'auto';
-        nameInput.style.MozUserSelect = 'auto';
-        nameInput.style.msUserSelect = 'auto';
-        nameInput.style.visibility = 'visible';
-        nameInput.style.display = 'block';
-        
-        // Удаляем все классы которые могут блокировать
-        nameInput.classList.remove('disabled');
-        nameInput.classList.remove('readonly');
-    }
-    
-    if (priceInput) {
-        // Убираем все блокирующие атрибуты и стили
-        priceInput.disabled = false;
-        priceInput.readOnly = false;
-        priceInput.setAttribute('aria-disabled', 'false');
-        
-        // Очищаем все блокирующие стили
-        priceInput.style.pointerEvents = 'auto';
-        priceInput.style.opacity = '1';
-        priceInput.style.cursor = 'text';
-        priceInput.style.userSelect = 'auto';
-        priceInput.style.WebkitUserSelect = 'auto';
-        priceInput.style.MozUserSelect = 'auto';
-        priceInput.style.msUserSelect = 'auto';
-        priceInput.style.visibility = 'visible';
-        priceInput.style.display = 'block';
-        
-        // Удаляем все классы которые могут блокировать
-        priceInput.classList.remove('disabled');
-        priceInput.classList.remove('readonly');
-    }
-}
-
-function showBuyPrices() {
+function showPurchases() {
     closeAllPopups();
-    const buyPrices = document.getElementById('buyPricesView');
-    buyPrices.classList.remove('hidden');
-    
-    // Убеждаемся что input'ы активны
-    setTimeout(() => {
-        enableBuyPriceInputs();
-        const nameInput = document.getElementById('itemNameInput');
-        if (nameInput) {
-            nameInput.value = '';
-            nameInput.focus();
-        }
-    }, 50);
-    
-    loadBuyPrices();
-    buyPrices.scrollIntoView({ behavior: 'smooth' });
+    const purchasesView = document.getElementById('purchasesView');
+    purchasesView.classList.remove('hidden');
+    loadPurchases();
+    purchasesView.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideBuyPrices() {
-    document.getElementById('buyPricesView').classList.add('hidden');
+function hidePurchases() {
+    document.getElementById('purchasesView').classList.add('hidden');
 }
 
-async function loadBuyPrices() {
-    const buyPricesList = document.getElementById('buyPricesList');
-    buyPricesList.innerHTML = '<p class="loading">Загрузка...</p>';
+async function loadPurchases() {
+    const purchasesList = document.getElementById('purchasesList');
+    purchasesList.innerHTML = '<p class="loading">Загрузка...</p>';
     
     try {
-        const response = await fetch('/api/get-buy-prices', {
+        const response = await fetch('/api/get-purchases', {
             headers: {'X-User-ID': userId}
         });
         
         const data = await response.json();
         
-        if (data.success && data.prices.length > 0) {
-            buyPricesList.innerHTML = data.prices.map(price => `
+        if (data.success && data.purchases.length > 0) {
+            let html = `
+                <div class="stats-summary" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0; font-size: 14px;">
+                        <i class="fas fa-shopping-cart"></i> Всего закупок: <strong>${data.purchases.length}</strong>
+                        &nbsp;|&nbsp;
+                        <i class="fas fa-coins"></i> На сумму: <strong>${formatPrice(data.total)}$</strong>
+                    </p>
+                </div>
+            `;
+            
+            html += data.purchases.map(p => `
                 <div class="item-card">
                     <div class="item-header">
-                        <h4>${price.item_name}</h4>
-                        <button class="delete-btn" onclick="deleteBuyPrice(${price.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
+                        <h4><i class="fas fa-box"></i> ${p.item_name}</h4>
+                        <button class="delete-btn" onclick="deletePurchase(${p.id})" title="Удалить"><i class="fas fa-xmark"></i></button>
                     </div>
-                    <p class="item-price"><i class="fas fa-coins"></i> ${price.price_text || formatPrice(price.price)}$</p>
-                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;"><i class="fas fa-user"></i> ${price.seller_name}</p>
-                    <p class="small" style="color: var(--text-secondary); margin-top: 2px;"><i class="fas fa-calendar"></i> ${new Date(price.created_at).toLocaleString('ru-RU')}</p>
+                    <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(p.price)}$</p>
+                    <p class="small" style="color: var(--text-secondary); margin-top: 4px;"><i class="fas fa-calendar"></i> ${p.created_at}</p>
                 </div>
             `).join('');
+            
+            purchasesList.innerHTML = html;
         } else {
-            buyPricesList.innerHTML = '<p class="empty"><i class="fas fa-coins"></i> Цены не добавлены</p>';
+            purchasesList.innerHTML = '<p class="empty"><i class="fas fa-shopping-cart"></i> Закупок пока нет. Добавьте товар в инвентарь — он автоматически появится здесь.</p>';
         }
     } catch (error) {
-        console.error('Error loading buy prices:', error);
-        buyPricesList.innerHTML = '<p class="error">Ошибка загрузки</p>';
+        console.error('Error loading purchases:', error);
+        purchasesList.innerHTML = '<p class="error">Ошибка загрузки</p>';
     }
 }
 
-async function submitBuyPrice() {
-    const nameInput = document.getElementById('itemNameInput');
-    const priceInput = document.getElementById('itemPriceInput');
-    
-    const name = nameInput.value.trim();
-    const priceText = priceInput.value.trim();
-    
-    if (!name || !priceText) {
-        showNotification('Заполните оба поля', 'warning');
-        return;
-    }
-    
-    // Парсим цену - извлекаем только числа и точки для валидации
-    const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
-    
-    if (isNaN(price) || price <= 0) {
-        showNotification('Цена должна быть числом > 0', 'warning');
-        return;
-    }
+async function deletePurchase(purchaseId) {
+    if (!confirm('Удалить эту запись из скупа?')) return;
     
     try {
-        const response = await fetch('/api/add-buy-price', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-User-ID': userId
-            },
-            body: JSON.stringify({
-                item_name: name,
-                price: price,
-                price_text: priceText  // Отправляем оригинальный текст
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('<i class="fas fa-check"></i> Цена добавлена', 'success');
-            // Очищаем поля
-            nameInput.value = '';
-            priceInput.value = '';
-            // Перезагружаем список
-            await loadBuyPrices();
-            // Восстанавливаем состояние input'ов после загрузки
-            setTimeout(() => {
-                enableBuyPriceInputs();
-                const freshNameInput = document.getElementById('itemNameInput');
-                if (freshNameInput) {
-                    freshNameInput.value = '';
-                    freshNameInput.focus();
-                }
-            }, 100);
-        } else {
-            showNotification(data.error || 'Ошибка добавления', 'error');
-        }
-    } catch (error) {
-        showNotification('Ошибка: ' + error.message, 'error');
-    }
-}
-
-async function deleteBuyPrice(priceId) {
-    if (!confirm('Удалить эту цену?')) return;
-    
-    try {
-        const response = await fetch(`/api/delete-buy-price/${priceId}`, {
+        const response = await fetch(`/api/delete-purchase/${purchaseId}`, {
             method: 'DELETE',
             headers: {'X-User-ID': userId}
         });
@@ -845,8 +737,8 @@ async function deleteBuyPrice(priceId) {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('<i class="fas fa-check"></i> Цена удалена', 'success');
-            loadBuyPrices();
+            showNotification('<i class="fas fa-check"></i> Запись удалена', 'success');
+            loadPurchases();
         } else {
             showNotification(data.error || 'Ошибка удаления', 'error');
         }
@@ -855,12 +747,12 @@ async function deleteBuyPrice(priceId) {
     }
 }
 
-function searchBuyPrices() {
-    const query = document.getElementById('buyPriceSearch').value.toLowerCase();
-    const items = document.getElementById('buyPricesList').querySelectorAll('.item-card');
+function searchPurchases() {
+    const query = document.getElementById('purchaseSearch').value.toLowerCase();
+    const items = document.getElementById('purchasesList').querySelectorAll('.item-card');
     
     items.forEach(item => {
-        const name = item.querySelector('h4').textContent.toLowerCase();
+        const name = item.querySelector('h4')?.textContent.toLowerCase() || '';
         item.style.display = name.includes(query) ? 'block' : 'none';
     });
 }

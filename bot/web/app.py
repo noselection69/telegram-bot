@@ -325,9 +325,20 @@ def add_item():
                 photo_file_id=data.get('photo_file_id')
             )
             session.add(item)
+            session.flush()
+            
+            # Автоматически добавляем в скуп (история закупок)
+            purchase_record = BuyPrice(
+                user_id=user.id,
+                item_name=data['name'],
+                price=float(data['price']),
+                price_text=f"{float(data['price']):,.0f}$".replace(',', ' '),
+                seller_name=None  # Можно добавить категорию если нужно
+            )
+            session.add(purchase_record)
             session.commit()
             
-            logger.info(f"✅ Item saved successfully: ID={item.id}, name={item.name}")
+            logger.info(f"✅ Item saved successfully: ID={item.id}, name={item.name}, also added to purchases")
             
             return jsonify({
                 'success': True,
@@ -1033,7 +1044,91 @@ def delete_item(item_id):
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
-# === ЦЕНЫ СКУПА (BUY PRICES) ===
+# === СКУП (ИСТОРИЯ ЗАКУПОК) ===
+
+@app.route('/api/get-purchases', methods=['GET'])
+def get_purchases():
+    """Получить историю закупок пользователя"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            
+            if not user:
+                return jsonify({
+                    'success': True,
+                    'purchases': [],
+                    'total': 0
+                })
+            
+            # Получаем все закупки пользователя, отсортированные по дате (новые первыми)
+            purchases = session.query(BuyPrice).filter(
+                BuyPrice.user_id == user.id
+            ).order_by(BuyPrice.created_at.desc()).all()
+            
+            total = sum(p.price for p in purchases)
+            
+            return jsonify({
+                'success': True,
+                'purchases': [
+                    {
+                        'id': p.id,
+                        'item_name': p.item_name,
+                        'price': p.price,
+                        'price_text': p.price_text,
+                        'created_at': p.created_at.strftime('%d.%m.%Y %H:%M') if p.created_at else ''
+                    }
+                    for p in purchases
+                ],
+                'total': total
+            })
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error in get_purchases: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/delete-purchase/<int:purchase_id>', methods=['DELETE'])
+def delete_purchase(purchase_id):
+    """Удалить запись из скупа"""
+    try:
+        user_id = int(request.headers.get('X-User-ID', 0))
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        session = SessionLocal()
+        try:
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if not user:
+                return jsonify({'success': False, 'error': 'User not found'}), 404
+            
+            purchase = session.query(BuyPrice).filter(
+                BuyPrice.id == purchase_id,
+                BuyPrice.user_id == user.id
+            ).first()
+            
+            if not purchase:
+                return jsonify({'success': False, 'error': 'Purchase not found'}), 404
+            
+            session.delete(purchase)
+            session.commit()
+            
+            return jsonify({'success': True, 'message': 'Запись удалена'})
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"Error deleting purchase: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# === ЦЕНЫ СКУПА (BUY PRICES) - СТАРЫЙ ФУНКЦИОНАЛ ===
 
 @app.route('/api/get-buy-prices', methods=['GET'])
 def get_buy_prices():
