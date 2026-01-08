@@ -152,6 +152,82 @@ try:
         import traceback
         logger.error(traceback.format_exc())
     
+    # Проверяем и добавляем колонки item_id и sale_price в buy_prices
+    try:
+        with sync_engine.connect() as connection:
+            if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+                # PostgreSQL: проверяем item_id
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='buy_prices' AND column_name='item_id'
+                    );
+                    """)
+                )
+                has_item_id = result.scalar()
+                
+                if not has_item_id:
+                    logger.info("🔧 Adding item_id column to buy_prices table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE buy_prices ADD COLUMN item_id INTEGER REFERENCES items(id);")
+                    )
+                    connection.commit()
+                    logger.info("✅ item_id column added to PostgreSQL")
+                else:
+                    logger.info("✅ item_id column already exists in buy_prices")
+                
+                # PostgreSQL: проверяем sale_price
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='buy_prices' AND column_name='sale_price'
+                    );
+                    """)
+                )
+                has_sale_price = result.scalar()
+                
+                if not has_sale_price:
+                    logger.info("🔧 Adding sale_price column to buy_prices table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE buy_prices ADD COLUMN sale_price FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ sale_price column added to PostgreSQL")
+                else:
+                    logger.info("✅ sale_price column already exists in buy_prices")
+            else:
+                # SQLite: используем PRAGMA
+                result = connection.execute(
+                    text("PRAGMA table_info(buy_prices)")
+                )
+                columns = [row[1] for row in result.fetchall()]
+                
+                if 'item_id' not in columns:
+                    logger.info("🔧 Adding item_id column to buy_prices table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE buy_prices ADD COLUMN item_id INTEGER REFERENCES items(id);")
+                    )
+                    connection.commit()
+                    logger.info("✅ item_id column added to SQLite")
+                else:
+                    logger.info("✅ item_id column already exists in buy_prices")
+                
+                if 'sale_price' not in columns:
+                    logger.info("🔧 Adding sale_price column to buy_prices table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE buy_prices ADD COLUMN sale_price FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ sale_price column added to SQLite")
+                else:
+                    logger.info("✅ sale_price column already exists in buy_prices")
+    except Exception as e:
+        logger.error(f"❌ Error adding buy_prices columns: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
     # Инициализируем BP задания
     try:
         session = SessionLocal()
