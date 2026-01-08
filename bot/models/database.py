@@ -100,13 +100,16 @@ class BuyPrice(Base):
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    item_id = Column(Integer, ForeignKey("items.id"), nullable=True)  # Связь с товаром
     seller_name = Column(String(255), nullable=True)  # Имя того, кто добавил цену
     item_name = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
     price_text = Column(String(255), nullable=True)  # Оригинальный текст (300-350к, 5G и т.д.)
+    sale_price = Column(Float, nullable=True)  # Цена продажи (заполняется при продаже)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="buy_prices")
+    item = relationship("Item", backref="buy_price_record")
 
 
 class BPTask(Base):

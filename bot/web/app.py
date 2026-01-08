@@ -327,9 +327,10 @@ def add_item():
             session.add(item)
             session.flush()
             
-            # Автоматически добавляем в скуп (история закупок)
+            # Автоматически добавляем в скуп (история закупок) со связью с товаром
             purchase_record = BuyPrice(
                 user_id=user.id,
+                item_id=item.id,  # Связываем с товаром
                 item_name=data['name'],
                 price=float(data['price']),
                 price_text=f"{float(data['price']):,.0f}$".replace(',', ' '),
@@ -374,6 +375,12 @@ def sell_item():
             # Добавляем запись о продаже
             sale = Sale(item_id=item_id, sale_price=sale_price)
             session.add(sale)
+            
+            # Обновляем цену продажи в записи скупа
+            buy_price_record = session.query(BuyPrice).filter(BuyPrice.item_id == item_id).first()
+            if buy_price_record:
+                buy_price_record.sale_price = sale_price
+            
             session.commit()
             
             profit = sale_price - item.purchase_price
@@ -1096,6 +1103,7 @@ def get_purchases():
                         'item_name': p.item_name,
                         'price': p.price,
                         'price_text': p.price_text,
+                        'sale_price': p.sale_price,  # Цена продажи (null если не продано)
                         'created_at': p.created_at.strftime('%d.%m.%Y %H:%M') if p.created_at else '',
                         'can_delete': is_admin or (current_user_id and p.user_id == current_user_id)
                     }

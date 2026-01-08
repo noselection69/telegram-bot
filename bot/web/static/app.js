@@ -714,16 +714,24 @@ async function loadPurchases() {
                 </div>
             `;
             
-            html += data.purchases.map(p => `
+            html += data.purchases.map(p => {
+                const profit = p.sale_price ? (p.sale_price - p.price) : null;
+                const profitClass = profit !== null ? (profit >= 0 ? 'positive' : 'negative') : '';
+                
+                return `
                 <div class="item-card">
                     <div class="item-header">
                         <h4><i class="fas fa-box"></i> ${p.item_name}</h4>
                         ${p.can_delete ? `<button class="delete-btn" onclick="deletePurchase(${p.id})" title="Удалить"><i class="fas fa-xmark"></i></button>` : ''}
                     </div>
-                    <p class="item-price"><i class="fas fa-coins"></i> ${formatPrice(p.price)}$</p>
+                    <p class="item-price"><i class="fas fa-coins"></i> Куплено: ${formatPrice(p.price)}$</p>
+                    ${p.sale_price ? `
+                        <p class="item-price" style="color: var(--success-color);"><i class="fas fa-receipt"></i> Продано: ${formatPrice(p.sale_price)}$</p>
+                        <p class="profit ${profitClass}" style="font-weight: 600;"><i class="fas fa-chart-line"></i> Прибыль: ${profit >= 0 ? '+' : ''}${formatPrice(profit)}$</p>
+                    ` : `<p class="item-price" style="color: var(--text-secondary);"><i class="fas fa-hourglass-half"></i> Не продано</p>`}
                     <p class="small" style="color: var(--text-secondary); margin-top: 4px;"><i class="fas fa-calendar"></i> ${p.created_at}</p>
                 </div>
-            `).join('');
+            `}).join('');
             
             purchasesList.innerHTML = html;
         } else {
