@@ -1355,6 +1355,32 @@ header h1 {
     transform: scale(1.02);
 }
 
+.btn-add-qty {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add-qty:hover {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+.qty-badge {
+    background: var(--accent-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
 .btn-delete-compact {
     background: transparent;
     color: var(--danger-color);

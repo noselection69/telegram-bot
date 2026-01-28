@@ -228,6 +228,82 @@ try:
         import traceback
         logger.error(traceback.format_exc())
     
+    # Проверяем и добавляем колонки quantity и total_cost в items
+    try:
+        with sync_engine.connect() as connection:
+            if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+                # PostgreSQL: проверяем quantity
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='items' AND column_name='quantity'
+                    );
+                    """)
+                )
+                has_quantity = result.scalar()
+                
+                if not has_quantity:
+                    logger.info("🔧 Adding quantity column to items table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE items ADD COLUMN quantity INTEGER DEFAULT 1;")
+                    )
+                    connection.commit()
+                    logger.info("✅ quantity column added to PostgreSQL")
+                else:
+                    logger.info("✅ quantity column already exists in items")
+                
+                # PostgreSQL: проверяем total_cost
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='items' AND column_name='total_cost'
+                    );
+                    """)
+                )
+                has_total_cost = result.scalar()
+                
+                if not has_total_cost:
+                    logger.info("🔧 Adding total_cost column to items table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE items ADD COLUMN total_cost FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ total_cost column added to PostgreSQL")
+                else:
+                    logger.info("✅ total_cost column already exists in items")
+            else:
+                # SQLite: используем PRAGMA
+                result = connection.execute(
+                    text("PRAGMA table_info(items)")
+                )
+                columns = [row[1] for row in result.fetchall()]
+                
+                if 'quantity' not in columns:
+                    logger.info("🔧 Adding quantity column to items table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE items ADD COLUMN quantity INTEGER DEFAULT 1;")
+                    )
+                    connection.commit()
+                    logger.info("✅ quantity column added to SQLite")
+                else:
+                    logger.info("✅ quantity column already exists in items")
+                
+                if 'total_cost' not in columns:
+                    logger.info("🔧 Adding total_cost column to items table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE items ADD COLUMN total_cost FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ total_cost column added to SQLite")
+                else:
+                    logger.info("✅ total_cost column already exists in items")
+    except Exception as e:
+        logger.error(f"❌ Error adding items columns: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
     # Инициализируем BP задания
     try:
         session = SessionLocal()
@@ -430,13 +506,80 @@ def add_item():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+@app.route('/api/add-item-quantity', methods=['POST'])
+def add_item_quantity():
+    """API для добавления количества к существующему товару"""
+    try:
+        data = request.json
+        user_id = int(request.headers.get('X-User-ID', 0))
+        item_id = int(data['item_id'])
+        add_qty = int(data.get('quantity', 1))
+        add_price = float(data['price'])  # Цена за добавляемые единицы
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID not provided'}), 400
+        
+        logger.info(f"➕ Adding quantity to item {item_id}: +{add_qty} for {add_price}$")
+        
+        session = SessionLocal()
+        try:
+            item = session.query(Item).filter(Item.id == item_id).first()
+            if not item:
+                return jsonify({'success': False, 'error': 'Item not found'}), 404
+            
+            # Текущие значения
+            old_qty = item.quantity or 1
+            old_total = item.total_cost or (item.purchase_price * old_qty)
+            
+            # Новые значения
+            new_qty = old_qty + add_qty
+            new_total = old_total + add_price
+            new_avg_price = new_total / new_qty
+            
+            # Обновляем товар
+            item.quantity = new_qty
+            item.total_cost = new_total
+            item.purchase_price = new_avg_price  # Средняя цена за единицу
+            
+            # Добавляем запись в скуп
+            user = session.query(User).filter(User.telegram_id == user_id).first()
+            if user:
+                purchase_record = BuyPrice(
+                    user_id=user.id,
+                    item_id=item.id,
+                    item_name=f"{item.name} (+{add_qty})",
+                    price=add_price,
+                    price_text=f"{add_price:,.0f}$".replace(',', ' '),
+                    seller_name=None
+                )
+                session.add(purchase_record)
+            
+            session.commit()
+            
+            logger.info(f"✅ Item quantity updated: {old_qty} -> {new_qty}, avg price: {new_avg_price:.0f}$")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Добавлено +{add_qty} к "{item.name}"',
+                'new_quantity': new_qty,
+                'avg_price': new_avg_price
+            })
+        finally:
+            session.close()
+        
+    except Exception as e:
+        logger.error(f"Error in add_item_quantity: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 @app.route('/api/sell-item', methods=['POST'])
 def sell_item():
-    """API для продажи товара"""
+    """API для продажи товара (с поддержкой частичной продажи)"""
     try:
         data = request.json
         item_id = int(data['item_id'])
-        sale_price = float(data['price'])
+        sale_price = float(data['price'])  # Общая цена продажи
+        sell_qty = int(data.get('quantity', 1))  # Количество для продажи
         
         session = SessionLocal()
         try:
@@ -445,26 +588,45 @@ def sell_item():
             if not item:
                 return jsonify({'success': False, 'error': 'Item not found'}), 404
             
-            # Помечаем как проданный
-            item.sold = True
+            current_qty = item.quantity or 1
+            
+            if sell_qty > current_qty:
+                return jsonify({'success': False, 'error': f'Недостаточно товара. Доступно: {current_qty}'}), 400
+            
+            # Рассчитываем прибыль (средняя цена покупки * количество)
+            purchase_cost = item.purchase_price * sell_qty
+            profit = sale_price - purchase_cost
+            
+            if sell_qty == current_qty:
+                # Продаём всё — помечаем как проданный
+                item.sold = True
+                item.quantity = 0
+            else:
+                # Частичная продажа — уменьшаем количество
+                new_qty = current_qty - sell_qty
+                old_total = item.total_cost or (item.purchase_price * current_qty)
+                # Уменьшаем total_cost пропорционально
+                item.total_cost = old_total - purchase_cost
+                item.quantity = new_qty
             
             # Добавляем запись о продаже
             sale = Sale(item_id=item_id, sale_price=sale_price)
             session.add(sale)
             
-            # Обновляем цену продажи в записи скупа
-            buy_price_record = session.query(BuyPrice).filter(BuyPrice.item_id == item_id).first()
+            # Обновляем цену продажи в записи скупа (для последней записи этого товара)
+            buy_price_record = session.query(BuyPrice).filter(BuyPrice.item_id == item_id).order_by(BuyPrice.id.desc()).first()
             if buy_price_record:
                 buy_price_record.sale_price = sale_price
             
             session.commit()
             
-            profit = sale_price - item.purchase_price
+            qty_text = f" ({sell_qty} шт.)" if sell_qty > 1 or current_qty > 1 else ""
             
             return jsonify({
                 'success': True,
-                'message': f'Товар продан за {sale_price}$',
-                'profit': profit
+                'message': f'Товар продан{qty_text} за {sale_price:,.0f}$'.replace(',', ' '),
+                'profit': profit,
+                'remaining': item.quantity
             })
         finally:
             session.close()
@@ -701,7 +863,9 @@ def get_items():
                         'id': item.id,
                         'name': item.name,
                         'category': item.category.value,
-                        'price': float(item.purchase_price),
+                        'price': float(item.purchase_price),  # Средняя цена за единицу
+                        'quantity': item.quantity or 1,
+                        'total_cost': item.total_cost or float(item.purchase_price),
                         'sold': item.sold
                     }
                     for item in items

@@ -44,11 +44,13 @@ class Item(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
     category = Column(Enum(CategoryEnum), nullable=False)
-    purchase_price = Column(Float, nullable=False)
+    purchase_price = Column(Float, nullable=False)  # Цена за единицу (средняя при qty > 1)
     purchase_date = Column(DateTime, default=datetime.utcnow)
     comment = Column(Text, nullable=True)
     photo_file_id = Column(String(255), nullable=True)
     sold = Column(Boolean, default=False)
+    quantity = Column(Integer, default=1, nullable=False)  # Количество товаров
+    total_cost = Column(Float, nullable=True)  # Общая сумма покупок (для расчёта средней цены)
     
     user = relationship("User", back_populates="items")
     sale = relationship("Sale", back_populates="item", uselist=False, cascade="all, delete-orphan")

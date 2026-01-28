@@ -255,7 +255,7 @@ function sellItem(itemId) {
     submitSellItem(itemId, parseFloat(price));
 }
 
-async function submitSellItem(itemId, salePrice) {
+async function submitSellItem(itemId, salePrice, quantity = 1) {
     try {
         const response = await fetch('/api/sell-item', {
             method: 'POST',
@@ -264,14 +264,16 @@ async function submitSellItem(itemId, salePrice) {
             },
             body: JSON.stringify({
                 item_id: itemId,
-                price: salePrice
+                price: salePrice,
+                quantity: quantity
             })
         });
         
         const result = await response.json();
         
         if (result.success) {
-            showNotification(`✅ ${result.message}\n💰 Прибыль: ${result.profit}$`, 'success');
+            const profitText = result.profit >= 0 ? `+${formatPrice(result.profit)}` : formatPrice(result.profit);
+            showNotification(`✅ ${result.message}\n💰 Прибыль: ${profitText}$`, 'success');
             loadInventory();
         } else {
             showNotification(result.error, 'error');
@@ -380,10 +382,115 @@ function openRentalModal(carId, carName) {
     showRentalModal(carId);
 }
 
-function openSaleModal(itemId, itemName, itemPrice) {
-    const price = prompt(`<i class="fas fa-receipt"></i> Введите цену продажи "${itemName}" (куплено за ${itemPrice}$):`, itemPrice);
-    if (!price) return;
-    submitSellItem(itemId, parseFloat(price));
+function openSaleModal(itemId, itemName, itemPrice, itemQty = 1) {
+    if (itemQty > 1) {
+        // Показываем модальное окно с выбором количества
+        const modal = document.getElementById('saleModal');
+        document.getElementById('saleItemId').value = itemId;
+        document.getElementById('saleItemName').textContent = itemName;
+        document.getElementById('saleAvgPrice').textContent = formatPrice(itemPrice);
+        document.getElementById('saleMaxQty').textContent = itemQty;
+        document.getElementById('saleQuantity').value = itemQty;
+        document.getElementById('saleQuantity').max = itemQty;
+        document.getElementById('salePrice').value = '';
+        document.getElementById('salePrice').placeholder = `Цена за ${itemQty} шт.`;
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.getElementById('saleQuantity').focus();
+    } else {
+        // Обычный prompt для одиночного товара
+        const price = prompt(`Введите цену продажи "${itemName}" (куплено за ${formatPrice(itemPrice)}$):`, itemPrice);
+        if (!price) return;
+        submitSellItem(itemId, parseFloat(price), 1);
+    }
+}
+
+function updateSalePricePlaceholder() {
+    const qty = document.getElementById('saleQuantity').value;
+    document.getElementById('salePrice').placeholder = `Цена за ${qty} шт.`;
+}
+
+function closeSaleModal() {
+    const modal = document.getElementById('saleModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+}
+
+function submitSaleModal() {
+    const itemId = document.getElementById('saleItemId').value;
+    const quantity = parseInt(document.getElementById('saleQuantity').value);
+    const price = parseFloat(document.getElementById('salePrice').value);
+    
+    if (!price || price <= 0) {
+        showNotification('Введите цену продажи', 'error');
+        return;
+    }
+    
+    closeSaleModal();
+    submitSellItem(itemId, price, quantity);
+}
+
+// Модальное окно для добавления количества
+function openAddQtyModal(itemId, itemName, currentQty) {
+    const modal = document.getElementById('addQtyModal');
+    document.getElementById('addQtyItemId').value = itemId;
+    document.getElementById('addQtyItemName').textContent = itemName;
+    document.getElementById('addQtyCurrentQty').textContent = currentQty;
+    document.getElementById('addQtyQuantity').value = 1;
+    document.getElementById('addQtyPrice').value = '';
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    document.getElementById('addQtyQuantity').focus();
+}
+
+function closeAddQtyModal() {
+    const modal = document.getElementById('addQtyModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+}
+
+async function submitAddQty() {
+    const itemId = document.getElementById('addQtyItemId').value;
+    const quantity = parseInt(document.getElementById('addQtyQuantity').value);
+    const price = parseFloat(document.getElementById('addQtyPrice').value);
+    
+    if (!quantity || quantity <= 0) {
+        showNotification('Введите количество', 'error');
+        return;
+    }
+    
+    if (!price || price <= 0) {
+        showNotification('Введите цену покупки', 'error');
+        return;
+    }
+    
+    closeAddQtyModal();
+    
+    try {
+        const response = await fetch('/api/add-item-quantity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-ID': userId
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                quantity: quantity,
+                price: price
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`✅ ${result.message}\n📊 Средняя цена: ${formatPrice(result.avg_price)}$`, 'success');
+            loadInventory();
+        } else {
+            showNotification(result.error, 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка: ' + error.message, 'error');
+    }
 }
 
 async function deleteCar(carId) {
@@ -609,24 +716,30 @@ async function loadInventory() {
         const data = await response.json();
         
         if (data.success && data.items.length > 0) {
-            // Фильтруем только непроданные товары
-            const unsoldItems = data.items.filter(item => !item.sold);
+            // Фильтруем только непроданные товары (quantity > 0 и не sold)
+            const unsoldItems = data.items.filter(item => !item.sold && (item.quantity || 1) > 0);
             
             if (unsoldItems.length > 0) {
-                inventoryList.innerHTML = unsoldItems.map(item => `
+                inventoryList.innerHTML = unsoldItems.map(item => {
+                    const qty = item.quantity || 1;
+                    const avgPrice = item.price;
+                    const showAvg = qty > 1;
+                    
+                    return `
                     <div class="inventory-item">
                         <div class="inventory-item-main">
                             <div class="inventory-item-info">
-                                <span class="inventory-item-name">${item.name}</span>
-                                <span class="inventory-item-details">${item.category} • ${formatPrice(item.price)}$</span>
+                                <span class="inventory-item-name">${item.name}${qty > 1 ? ` <span class="qty-badge">×${qty}</span>` : ''}</span>
+                                <span class="inventory-item-details">${item.category} • ${showAvg ? `~${formatPrice(avgPrice)}$/шт` : `${formatPrice(avgPrice)}$`}</span>
                             </div>
                             <div class="inventory-item-actions">
-                                <button class="btn-sell-compact" onclick="openSaleModal(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price})">Продать</button>
+                                <button class="btn-add-qty" onclick="openAddQtyModal(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${qty})" title="Добавить ещё"><i class="fas fa-plus"></i></button>
+                                <button class="btn-sell-compact" onclick="openSaleModal(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${avgPrice}, ${qty})">Продать</button>
                                 <button class="btn-delete-compact" onclick="deleteItem(${item.id})"><i class="fas fa-xmark"></i></button>
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             } else {
                 inventoryList.innerHTML = '<p class="empty"><i class="fas fa-box"></i> Нет товаров в наличии</p>';
             }
