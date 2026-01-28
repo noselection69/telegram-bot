@@ -818,6 +818,7 @@ def get_sales():
             else:
                 # График за последние 30 дней (статистика остаётся за всё время)
                 # Берём ВСЕ продажи пользователя для графика
+                from datetime import timedelta
                 all_sales_for_chart = session.query(Sale).join(Item).filter(Item.user_id == user.id).all()
                 
                 daily_profit = defaultdict(float)
