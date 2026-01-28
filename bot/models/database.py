@@ -61,8 +61,10 @@ class Sale(Base):
     
     id = Column(Integer, primary_key=True)
     item_id = Column(Integer, ForeignKey("items.id"), nullable=False)
-    sale_price = Column(Float, nullable=False)
-    sale_date = Column(DateTime, default=get_current_moscow_time)  # Используем Московское время
+    sale_price = Column(Float, nullable=False)  # Общая цена продажи
+    sale_date = Column(DateTime, default=get_current_moscow_time)
+    quantity = Column(Integer, default=1, nullable=False)  # Количество проданного
+    purchase_cost = Column(Float, nullable=True)  # Себестоимость проданного (для расчёта прибыли)
     
     item = relationship("Item", back_populates="sale")
 

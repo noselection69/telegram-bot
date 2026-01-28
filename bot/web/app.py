@@ -304,6 +304,82 @@ try:
         import traceback
         logger.error(traceback.format_exc())
     
+    # Проверяем и добавляем колонки quantity и purchase_cost в sales
+    try:
+        with sync_engine.connect() as connection:
+            if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+                # PostgreSQL: проверяем quantity в sales
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='sales' AND column_name='quantity'
+                    );
+                    """)
+                )
+                has_quantity = result.scalar()
+                
+                if not has_quantity:
+                    logger.info("🔧 Adding quantity column to sales table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE sales ADD COLUMN quantity INTEGER DEFAULT 1;")
+                    )
+                    connection.commit()
+                    logger.info("✅ quantity column added to sales (PostgreSQL)")
+                else:
+                    logger.info("✅ quantity column already exists in sales")
+                
+                # PostgreSQL: проверяем purchase_cost в sales
+                result = connection.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='sales' AND column_name='purchase_cost'
+                    );
+                    """)
+                )
+                has_purchase_cost = result.scalar()
+                
+                if not has_purchase_cost:
+                    logger.info("🔧 Adding purchase_cost column to sales table (PostgreSQL)...")
+                    connection.execute(
+                        text("ALTER TABLE sales ADD COLUMN purchase_cost FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ purchase_cost column added to sales (PostgreSQL)")
+                else:
+                    logger.info("✅ purchase_cost column already exists in sales")
+            else:
+                # SQLite
+                result = connection.execute(
+                    text("PRAGMA table_info(sales)")
+                )
+                columns = [row[1] for row in result.fetchall()]
+                
+                if 'quantity' not in columns:
+                    logger.info("🔧 Adding quantity column to sales table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE sales ADD COLUMN quantity INTEGER DEFAULT 1;")
+                    )
+                    connection.commit()
+                    logger.info("✅ quantity column added to sales (SQLite)")
+                else:
+                    logger.info("✅ quantity column already exists in sales")
+                
+                if 'purchase_cost' not in columns:
+                    logger.info("🔧 Adding purchase_cost column to sales table (SQLite)...")
+                    connection.execute(
+                        text("ALTER TABLE sales ADD COLUMN purchase_cost FLOAT;")
+                    )
+                    connection.commit()
+                    logger.info("✅ purchase_cost column added to sales (SQLite)")
+                else:
+                    logger.info("✅ purchase_cost column already exists in sales")
+    except Exception as e:
+        logger.error(f"❌ Error adding sales columns: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
     # Инициализируем BP задания
     try:
         session = SessionLocal()
@@ -605,7 +681,7 @@ def sell_item():
             if sell_qty > current_qty:
                 return jsonify({'success': False, 'error': f'Недостаточно товара. Доступно: {current_qty}'}), 400
             
-            # Рассчитываем прибыль (средняя цена покупки * количество)
+            # Рассчитываем себестоимость (средняя цена покупки * количество)
             purchase_cost = item.purchase_price * sell_qty
             profit = sale_price - purchase_cost
             
@@ -621,8 +697,13 @@ def sell_item():
                 item.total_cost = old_total - purchase_cost
                 item.quantity = new_qty
             
-            # Добавляем запись о продаже
-            sale = Sale(item_id=item_id, sale_price=sale_price)
+            # Добавляем запись о продаже С КОЛИЧЕСТВОМ И СЕБЕСТОИМОСТЬЮ
+            sale = Sale(
+                item_id=item_id, 
+                sale_price=sale_price,
+                quantity=sell_qty,
+                purchase_cost=purchase_cost
+            )
             session.add(sale)
             
             # Обновляем цену продажи в записи скупа (для последней записи этого товара)
@@ -948,17 +1029,27 @@ def get_sales():
                 sales = [s for s in sales if s.sale_date and 
                         week_ago_naive <= s.sale_date.replace(tzinfo=None) <= now_naive]
             
+            # Функция для расчёта прибыли с учётом количества
+            def calc_profit(sale):
+                if sale.purchase_cost is not None:
+                    # Новый способ: есть сохранённая себестоимость
+                    return float(sale.sale_price) - float(sale.purchase_cost)
+                else:
+                    # Старый способ: берём цену за 1 шт * qty
+                    qty = sale.quantity or 1
+                    return float(sale.sale_price) - float(sale.item.purchase_price) * qty
+            
             # Сортируем по типу сделок или по дате (по умолчанию новые первые)
             if deal_filter == 'best':
-                sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price), reverse=True)
+                sales = sorted(sales, key=lambda s: calc_profit(s), reverse=True)
             elif deal_filter == 'worst':
-                sales = sorted(sales, key=lambda s: float(s.sale_price) - float(s.item.purchase_price))
+                sales = sorted(sales, key=lambda s: calc_profit(s))
             else:
                 # По умолчанию сортируем по дате (новые первые)
                 sales = sorted(sales, key=lambda s: s.sale_date if s.sale_date else datetime.min, reverse=True)
             
             total_income = sum(float(sale.sale_price) for sale in sales)
-            total_profit = sum(float(sale.sale_price) - float(sale.item.purchase_price) for sale in sales)
+            total_profit = sum(calc_profit(sale) for sale in sales)
             total_count = len(sales)
             
             # Генерируем данные для графика прибыли по дням
@@ -971,8 +1062,7 @@ def get_sales():
                 for sale in sales:
                     if sale.sale_date:
                         hour = sale.sale_date.hour
-                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
-                        hourly_profit[hour] += profit
+                        hourly_profit[hour] += calc_profit(sale)
                 
                 for hour in range(24):
                     chart_data['labels'].append(f'{hour:02d}:00')
@@ -983,8 +1073,7 @@ def get_sales():
                 for sale in sales:
                     if sale.sale_date:
                         day_key = sale.sale_date.strftime('%d.%m')
-                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
-                        daily_profit[day_key] += profit
+                        daily_profit[day_key] += calc_profit(sale)
                 
                 # Последние 7 дней
                 for i in range(6, -1, -1):
@@ -1006,8 +1095,7 @@ def get_sales():
                         sale_date_naive = sale.sale_date.replace(tzinfo=None)
                         if sale_date_naive >= thirty_days_ago_naive:
                             day_key = sale.sale_date.strftime('%d.%m')
-                            profit = float(sale.sale_price) - float(sale.item.purchase_price)
-                            daily_profit[day_key] += profit
+                            daily_profit[day_key] += calc_profit(sale)
                 
                 # Последние 30 дней
                 for i in range(29, -1, -1):
@@ -1028,8 +1116,9 @@ def get_sales():
                         'id': sale.id,
                         'item_name': sale.item.name,
                         'sale_price': float(sale.sale_price),
-                        'purchase_price': float(sale.item.purchase_price),
-                        'profit': float(sale.sale_price) - float(sale.item.purchase_price),
+                        'purchase_price': float(sale.purchase_cost) if sale.purchase_cost else float(sale.item.purchase_price) * (sale.quantity or 1),
+                        'profit': calc_profit(sale),
+                        'quantity': sale.quantity or 1,
                         'created_at': sale.sale_date.isoformat() if sale.sale_date else None
                     }
                     for sale in paginated_sales

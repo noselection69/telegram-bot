@@ -959,17 +959,19 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
                 <div style="margin-top: 15px;">
                     <h4 style="margin-bottom: 10px;">Товары (${items_count}):</h4>
                     <div style="max-height: 400px; overflow-y: auto;">
-                        ${data.sales.map((sale, idx) => `
+                        ${data.sales.map((sale, idx) => {
+                            const qtyText = (sale.quantity && sale.quantity > 1) ? ` ×${sale.quantity}` : '';
+                            return `
                             <div style="padding: 8px; background: var(--bg-secondary); margin-bottom: 8px; border-radius: 4px; border-left: 3px solid ${sale.profit >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="flex: 1;"><strong>${sale.item_name}</strong></span>
+                                    <span style="flex: 1;"><strong>${sale.item_name}</strong>${qtyText}</span>
                                     <span style="color: ${sale.profit >= 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">${sale.profit >= 0 ? '+' : ''}${formatPrice(sale.profit)}$</span>
                                 </div>
                                 <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
                                     Куплено: ${formatPrice(sale.purchase_price)}$ → Продано: ${formatPrice(sale.sale_price)}$
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
                 ` : '<p class="empty"><i class="fas fa-chart-pie"></i> Нет данных для отображения</p>'}
