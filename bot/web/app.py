@@ -785,6 +785,51 @@ def get_sales():
             total_profit = sum(float(sale.sale_price) - float(sale.item.purchase_price) for sale in sales)
             total_count = len(sales)
             
+            # Генерируем данные для графика прибыли по дням
+            from collections import defaultdict
+            chart_data = {'labels': [], 'values': []}
+            
+            if time_filter == 'day':
+                # По часам за день
+                hourly_profit = defaultdict(float)
+                for sale in sales:
+                    if sale.sale_date:
+                        hour = sale.sale_date.hour
+                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
+                        hourly_profit[hour] += profit
+                
+                for hour in range(24):
+                    chart_data['labels'].append(f'{hour:02d}:00')
+                    chart_data['values'].append(hourly_profit.get(hour, 0))
+            elif time_filter == 'week':
+                # По дням за неделю
+                daily_profit = defaultdict(float)
+                for sale in sales:
+                    if sale.sale_date:
+                        day_key = sale.sale_date.strftime('%d.%m')
+                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
+                        daily_profit[day_key] += profit
+                
+                # Последние 7 дней
+                for i in range(6, -1, -1):
+                    day = (get_moscow_now() - timedelta(days=i)).strftime('%d.%m')
+                    chart_data['labels'].append(day)
+                    chart_data['values'].append(daily_profit.get(day, 0))
+            else:
+                # По дням за последние 30 дней
+                daily_profit = defaultdict(float)
+                for sale in sales:
+                    if sale.sale_date:
+                        day_key = sale.sale_date.strftime('%d.%m')
+                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
+                        daily_profit[day_key] += profit
+                
+                # Последние 30 дней
+                for i in range(29, -1, -1):
+                    day = (get_moscow_now() - timedelta(days=i)).strftime('%d.%m')
+                    chart_data['labels'].append(day)
+                    chart_data['values'].append(daily_profit.get(day, 0))
+            
             # Пагинация
             total_pages = (total_count + per_page - 1) // per_page  # Округление вверх
             start_idx = (page - 1) * per_page
@@ -809,7 +854,8 @@ def get_sales():
                 'total_sales': total_count,
                 'page': page,
                 'per_page': per_page,
-                'total_pages': total_pages
+                'total_pages': total_pages,
+                'chart_data': chart_data
             })
         finally:
             session.close()

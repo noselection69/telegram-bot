@@ -109,6 +109,11 @@
                         <button class="btn btn-secondary" id="filterNone" onclick="loadStatistics()" style="background: var(--btn-bg);"><i class="fas fa-sparkles"></i> Все</button>
                     </div>
                     
+                    <!-- График прибыли -->
+                    <div id="salesChartContainer" style="margin: 15px 0; padding: 10px; background: var(--bg-secondary); border-radius: 12px;">
+                        <canvas id="salesChart" style="width: 100%; max-height: 250px;"></canvas>
+                    </div>
+                    
                     <div id="statisticsContent"></div>
                     <button class="btn btn-secondary" onclick="hideStatistics()"><i class="fas fa-arrow-left"></i> Назад</button>
                 </div>

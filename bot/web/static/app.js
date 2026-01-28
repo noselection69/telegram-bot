@@ -779,6 +779,9 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
     const statsContent = document.getElementById('statisticsContent');
     statsContent.innerHTML = '<p class="loading">Загрузка статистики...</p>';
     
+    // Сохраняем текущие фильтры для графика
+    currentSalesTimeFilter = timeFilter;
+    
     // Обновляем активные кнопки фильтров
     document.getElementById('filterDay').style.background = timeFilter === 'day' ? 'var(--accent-color)' : 'var(--btn-bg)';
     document.getElementById('filterWeek').style.background = timeFilter === 'week' ? 'var(--accent-color)' : 'var(--btn-bg)';
@@ -805,6 +808,11 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
             const items_count = data.total_sales;
             const timeLabel = timeFilter === 'day' ? 'за день' : timeFilter === 'week' ? 'за неделю' : 'всё время';
             const dealLabel = dealFilter === 'best' ? ' (выгодные)' : dealFilter === 'worst' ? ' (невыгодные)' : '';
+            
+            // Рендерим график прибыли
+            if (data.chart_data) {
+                renderSalesChart(data.chart_data, timeFilter);
+            }
             
             const content = `
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
@@ -857,6 +865,106 @@ function loadStatistics(timeFilter = 'all', dealFilter = 'all') {
     .catch(e => {
         console.error('Error loading statistics:', e);
         statsContent.innerHTML = '<p class="error">Ошибка загрузки</p>';
+    });
+}
+
+// График прибыли перекупа
+let salesChartInstance = null;
+let currentSalesTimeFilter = 'all';
+
+function renderSalesChart(chartData, timeFilter) {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
+    
+    // Уничтожаем предыдущий график если есть
+    if (salesChartInstance) {
+        salesChartInstance.destroy();
+    }
+    
+    const chartTitle = timeFilter === 'day' ? 'Прибыль по часам' : 
+                       timeFilter === 'week' ? 'Прибыль по дням (неделя)' : 
+                       'Прибыль за последние 30 дней';
+    
+    // Определяем цвета
+    const computedStyle = getComputedStyle(document.body);
+    const bgColor = computedStyle.getPropertyValue('--bg-primary').trim();
+    const isDark = bgColor.includes('26') || bgColor.includes('30') || bgColor.includes('rgb(26') || 
+                   document.body.style.backgroundColor?.includes('26') ||
+                   window.Telegram?.WebApp?.colorScheme === 'dark';
+    
+    const textColor = isDark ? '#ffffff' : '#1a1a1a';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+    
+    // Цвета столбцов: зелёный для прибыли, красный для убытка
+    const backgroundColors = chartData.values.map(v => v >= 0 ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)');
+    const borderColors = chartData.values.map(v => v >= 0 ? 'rgba(76, 175, 80, 1)' : 'rgba(244, 67, 54, 1)');
+    
+    salesChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Прибыль ($)',
+                data: chartData.values,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: chartTitle,
+                    color: textColor,
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.raw;
+                            return (val >= 0 ? '+' : '') + formatPrice(val) + '$';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor,
+                        callback: function(value) {
+                            return (value >= 0 ? '+' : '') + formatPrice(value) + '$';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: textColor,
+                        maxRotation: 45,
+                        minRotation: 0,
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
