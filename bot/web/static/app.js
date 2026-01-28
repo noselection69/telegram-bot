@@ -909,12 +909,17 @@ function renderSalesChart(chartData, timeFilter) {
                 backgroundColor: backgroundColors,
                 borderColor: borderColors,
                 borderWidth: 1,
-                borderRadius: 4
+                borderRadius: 4,
+                minBarLength: 5 // Минимальная высота столбика для видимости
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index', // Наведение по всей вертикальной области
+                intersect: false // Не нужно точно попадать в столбик
+            },
             plugins: {
                 legend: {
                     display: false
@@ -1269,12 +1274,17 @@ function renderRentalChart(chartData, timeFilter) {
                 backgroundColor: 'rgba(76, 175, 80, 0.7)',
                 borderColor: 'rgba(76, 175, 80, 1)',
                 borderWidth: 1,
-                borderRadius: 4
+                borderRadius: 4,
+                minBarLength: 5 // Минимальная высота столбика для видимости
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index', // Наведение по всей вертикальной области
+                intersect: false // Не нужно точно попадать в столбик
+            },
             plugins: {
                 legend: {
                     display: false
