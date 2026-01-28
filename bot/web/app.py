@@ -455,7 +455,10 @@ def add_item():
         if not user_id:
             return jsonify({'success': False, 'error': 'User ID not provided'}), 400
         
-        logger.info(f"💾 Adding item for user {user_id}: {data.get('name')}")
+        quantity = int(data.get('quantity', 1))
+        price = float(data['price'])
+        
+        logger.info(f"💾 Adding item for user {user_id}: {data.get('name')} x{quantity}")
         
         session = SessionLocal()
         try:
@@ -467,35 +470,44 @@ def add_item():
                 session.flush()
                 logger.info(f"   Created new user: {user.id}")
             
-            # Создаем товар
+            # Создаем товар с количеством
+            # Если qty > 1, то price - это общая сумма, а purchase_price - средняя цена за единицу
+            avg_price = price / quantity if quantity > 1 else price
+            
             item = Item(
                 user_id=user.id,
                 name=data['name'],
                 category=CategoryEnum[data['category']],
-                purchase_price=float(data['price']),
+                purchase_price=avg_price,
+                quantity=quantity,
+                total_cost=price,
                 comment=data.get('comment'),
                 photo_file_id=data.get('photo_file_id')
             )
             session.add(item)
             session.flush()
             
-            # Автоматически добавляем в скуп (история закупок) со связью с товаром
-            purchase_record = BuyPrice(
-                user_id=user.id,
-                item_id=item.id,  # Связываем с товаром
-                item_name=data['name'],
-                price=float(data['price']),
-                price_text=f"{float(data['price']):,.0f}$".replace(',', ' '),
-                seller_name=None  # Можно добавить категорию если нужно
-            )
-            session.add(purchase_record)
+            # Добавляем в скуп только если quantity == 1
+            if quantity == 1:
+                purchase_record = BuyPrice(
+                    user_id=user.id,
+                    item_id=item.id,
+                    item_name=data['name'],
+                    price=price,
+                    price_text=f"{price:,.0f}$".replace(',', ' '),
+                    seller_name=None
+                )
+                session.add(purchase_record)
+                logger.info(f"✅ Item saved + added to purchases: ID={item.id}, name={item.name}")
+            else:
+                logger.info(f"✅ Item saved (qty={quantity}, no purchase record): ID={item.id}, name={item.name}")
+            
             session.commit()
             
-            logger.info(f"✅ Item saved successfully: ID={item.id}, name={item.name}, also added to purchases")
-            
+            qty_text = f" x{quantity}" if quantity > 1 else ""
             return jsonify({
                 'success': True,
-                'message': f'Товар "{data["name"]}" успешно добавлен!',
+                'message': f'Товар "{data["name"]}"{qty_text} успешно добавлен!',
                 'item_id': item.id
             })
         finally:

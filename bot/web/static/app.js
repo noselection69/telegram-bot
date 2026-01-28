@@ -210,11 +210,15 @@ function hideAddItemForm() {
 async function submitAddItem(event) {
     event.preventDefault();
     
+    const qtyInput = document.getElementById('itemQuantity').value;
+    const quantity = qtyInput ? parseInt(qtyInput) : 1;
+    
     const data = {
         name: document.getElementById('itemName').value,
         category: document.getElementById('itemCategory').value,
         price: parseFloat(document.getElementById('itemPrice').value),
-        comment: document.getElementById('itemComment').value
+        comment: document.getElementById('itemComment').value,
+        quantity: quantity
     };
     
     try {
