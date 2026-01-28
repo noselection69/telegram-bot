@@ -816,13 +816,21 @@ def get_sales():
                     chart_data['labels'].append(day)
                     chart_data['values'].append(daily_profit.get(day, 0))
             else:
-                # По дням за последние 30 дней
+                # График за последние 30 дней (статистика остаётся за всё время)
+                # Берём ВСЕ продажи пользователя для графика
+                all_sales_for_chart = session.query(Sale).join(Item).filter(Item.user_id == user.id).all()
+                
                 daily_profit = defaultdict(float)
-                for sale in sales:
+                thirty_days_ago = get_moscow_now() - timedelta(days=30)
+                thirty_days_ago_naive = thirty_days_ago.replace(tzinfo=None)
+                
+                for sale in all_sales_for_chart:
                     if sale.sale_date:
-                        day_key = sale.sale_date.strftime('%d.%m')
-                        profit = float(sale.sale_price) - float(sale.item.purchase_price)
-                        daily_profit[day_key] += profit
+                        sale_date_naive = sale.sale_date.replace(tzinfo=None)
+                        if sale_date_naive >= thirty_days_ago_naive:
+                            day_key = sale.sale_date.strftime('%d.%m')
+                            profit = float(sale.sale_price) - float(sale.item.purchase_price)
+                            daily_profit[day_key] += profit
                 
                 # Последние 30 дней
                 for i in range(29, -1, -1):
